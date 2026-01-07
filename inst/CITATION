@@ -1,0 +1,10 @@
+bibentry(
+  bibtype  = "Manual",
+  title    = "TSQCA: Threshold Sweep Extensions for Qualitative Comparative Analysis",
+  author   = "Yuki Toyoda",
+  year     = "2025",
+  note     = "R package version 0.1.0",
+  url      = "https://github.com/im-research-yt/TSQCA",
+  doi      = "10.5281/zenodo.17899391",
+  header   = "To cite TSQCA in publications use:"
+)

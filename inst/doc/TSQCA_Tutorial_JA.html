@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>TSQCA Tutorial (Japanese)</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">TSQCA Tutorial (Japanese)</h1>
+
+
+
+<div id="はじめに" class="section level1">
+<h1>はじめに</h1>
+<p>TS-QCA（Threshold-Sweep QCA）は、crisp-set QCA において
+<strong>アウトカム Y と条件 X
+の閾値設定が結果に与える影響を体系的に評価する</strong>
+ためのフレームワークです。</p>
+<p>QCA はキャリブレーション後、設定した閾値に基づいて データを 0/1
+の集合に分けます。 しかし、閾値が少し変わるだけで、Truth Table
+や最小化解が変化することがあります。</p>
+<p>TS-QCA はその問題に対して、以下を自動実行します。</p>
+<ul>
+<li>多数の閾値候補に基づくデータの二値化</li>
+<li>Truth Table の生成</li>
+<li><code>QCA::minimize()</code> による最小化</li>
+<li>解（式・整合性・被覆値）の抽出</li>
+</ul>
+<hr />
+</div>
+<div id="実装されている4手法" class="section level1">
+<h1>実装されている4手法</h1>
+<p>TSQCA パッケージでは、TS-QCA
+の4つのスイープ手法を実装しています。</p>
+<table>
+<colgroup>
+<col width="21%" />
+<col width="23%" />
+<col width="20%" />
+<col width="34%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>手法</th>
+<th>変化させる閾値</th>
+<th>固定する閾値</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>CTS–QCA</strong></td>
+<td>1つの X</td>
+<td>Y + 他の X</td>
+<td>個別条件の影響を見る</td>
+</tr>
+<tr class="even">
+<td><strong>MCTS–QCA</strong></td>
+<td>複数の X</td>
+<td>Y</td>
+<td>複数条件の組合せの影響</td>
+</tr>
+<tr class="odd">
+<td><strong>OTS–QCA</strong></td>
+<td>Y</td>
+<td>全ての X</td>
+<td>アウトカム閾値の影響</td>
+</tr>
+<tr class="even">
+<td><strong>DTS–QCA</strong></td>
+<td>X と Y</td>
+<td>なし</td>
+<td>全面的感度分析</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>対象範囲:</strong>
+本パッケージは<strong>十分条件分析</strong>に特化しています。必要条件分析（ある条件がアウトカムに必要かどうか）は異なる論理構造と評価指標を伴うため、将来のバージョンで対応予定です。</p>
+</blockquote>
+<hr />
+</div>
+<div id="データ準備" class="section level1">
+<h1>データ準備</h1>
+<p>TS-QCA は、キャリブレーション済みデータ（例：0〜10
+スケール）を想定しています。
+閾値は数値（整数・実数）であれば構いません。</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(TSQCA)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;sample_data&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>dat <span class="ot">&lt;-</span> sample_data</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">str</span>(dat)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt; &#39;data.frame&#39;:    80 obs. of  4 variables:</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">#&gt;  $ Y : int  8 4 5 7 2 2 7 5 3 8 ...</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="co">#&gt;  $ X1: int  7 2 6 8 8 9 8 8 1 5 ...</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co">#&gt;  $ X2: int  7 5 8 4 0 5 8 4 4 2 ...</span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co">#&gt;  $ X3: int  1 6 6 5 3 4 5 3 6 8 ...</span></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>Yvar  <span class="ot">&lt;-</span> <span class="st">&quot;Y&quot;</span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>Xvars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;X1&quot;</span>, <span class="st">&quot;X2&quot;</span>, <span class="st">&quot;X3&quot;</span>)</span></code></pre></div>
+<p>※
+欠損値（NA）が含まれている場合、スイープ実行前に除去または補完を行ってください。</p>
+<hr />
+</div>
+<div id="混合データタイプの扱い" class="section level1">
+<h1>混合データタイプの扱い</h1>
+<div id="値変数と連続変数が混在する場合" class="section level2">
+<h2>2値変数と連続変数が混在する場合</h2>
+<p>実際の社会科学データでは、<strong>2値変数</strong>（性別、Yes/No等）と<strong>連続変数</strong>（売上高、満足度スコア等）が混在することがよくあります。TSQCAでこのような混合データを扱う際には、以下の点に注意が必要です。</p>
+<div id="基本原則" class="section level3">
+<h3>基本原則</h3>
+<ol style="list-style-type: decimal">
+<li><strong>2値変数に対して閾値スイープを行わない</strong> —
+すでに2値化されている（0/1）</li>
+<li><strong>2値変数には閾値 1 を指定</strong>して元の値を保持する</li>
+<li><strong><code>sweep_list</code>で各変数の閾値を明示的に定義</strong>する</li>
+</ol>
+</div>
+<div id="なぜ2値変数には閾値1を指定するのか" class="section level3">
+<h3>なぜ2値変数には閾値1を指定するのか？</h3>
+<p>内部で使用される<code>qca_bin()</code>関数は <code>x &gt;= thr</code>
+で2値化を行います：</p>
+<ul>
+<li><code>x = 0</code> の場合: <code>0 &gt;= 1</code> → FALSE →
+<strong>0</strong>（元の値を保持）</li>
+<li><code>x = 1</code> の場合: <code>1 &gt;= 1</code> → TRUE →
+<strong>1</strong>（元の値を保持）</li>
+</ul>
+<p>これにより、2値変数は2値化プロセスで変更されることなく、元の値が保持されます。</p>
+</div>
+<div id="実践例混合データの場合" class="section level3">
+<h3>実践例：混合データの場合</h3>
+<p>データセットに以下の変数があるとします：</p>
+<ul>
+<li><strong>X1</strong>: 性別（0 = 男性、1 = 女性）— 2値変数</li>
+<li><strong>X2</strong>: 商品品質スコア（0-10）— 連続変数</li>
+<li><strong>X3</strong>: 店舗雰囲気スコア（0-10）— 連続変数</li>
+</ul>
+<p><code>ctSweepM()</code>を使用する場合：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># 正しい方法：各変数の閾値を明示的に指定</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>sweep_list <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">X1 =</span> <span class="dv">1</span>,      <span class="co"># 2値変数: 閾値1を使用</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">X2 =</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">8</span>,    <span class="co"># 連続変数: 閾値をスイープ</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">X3 =</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">8</span>     <span class="co"># 連続変数: 閾値をスイープ</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>res_mixed <span class="ot">&lt;-</span> <span class="fu">ctSweepM</span>(</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  <span class="at">dat            =</span> dat,</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  <span class="at">Yvar           =</span> <span class="st">&quot;Y&quot;</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  <span class="at">Xvars          =</span> <span class="fu">c</span>(<span class="st">&quot;X1&quot;</span>, <span class="st">&quot;X2&quot;</span>, <span class="st">&quot;X3&quot;</span>),</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  <span class="at">sweep_list     =</span> sweep_list,</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>  <span class="at">thrY           =</span> <span class="dv">7</span>,</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>  <span class="at">dir.exp        =</span> <span class="dv">1</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>)</span></code></pre></div>
+<p>これにより 1 × 3 × 3 =
+<strong>9通り</strong>の閾値組み合わせを探索し、X1は固定された2値条件として、X2とX3はスイープされます。</p>
+</div>
+<div id="よくある間違い" class="section level3">
+<h3>よくある間違い</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># 間違い：2値変数に対してスイープ範囲を指定</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>sweep_list <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">X1 =</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">8</span>,    <span class="co"># すべての値が0になる（0 &lt; 6 かつ 1 &lt; 6 のため）</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">X2 =</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">8</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">X3 =</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">8</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>)</span></code></pre></div>
+<p>誤って<code>X1 = 6:8</code>と指定すると、0も1も<code>&gt;= 6</code>の条件を満たさないため、すべてのX1の値が0になってしまいます。これは2値変数の情報を完全に破壊してしまいます。</p>
+</div>
+<div id="推奨方法" class="section level3">
+<h3>推奨方法</h3>
+<p>閾値スイープを設定する前に、必ずデータ構造を確認してください：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># 変数の範囲を確認</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">summary</span>(dat[, <span class="fu">c</span>(<span class="st">&quot;X1&quot;</span>, <span class="st">&quot;X2&quot;</span>, <span class="st">&quot;X3&quot;</span>)])</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># 2値変数を識別（0と1のみ）</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">sapply</span>(dat[, <span class="fu">c</span>(<span class="st">&quot;X1&quot;</span>, <span class="st">&quot;X2&quot;</span>, <span class="st">&quot;X3&quot;</span>)], <span class="cf">function</span>(x) {</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  unique_vals <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(x))</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(unique_vals) <span class="sc">==</span> <span class="dv">2</span> <span class="sc">&amp;&amp;</span> <span class="fu">all</span>(unique_vals <span class="sc">==</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>))) {</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>    <span class="st">&quot;2値変数（閾値 = 1 を使用）&quot;</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>    <span class="fu">paste</span>(<span class="st">&quot;連続変数（範囲:&quot;</span>, <span class="fu">min</span>(x), <span class="st">&quot;-&quot;</span>, <span class="fu">max</span>(x), <span class="st">&quot;)&quot;</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  }</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>})</span></code></pre></div>
+<hr />
+</div>
+</div>
+</div>
+<div id="ctsqcactsweeps単一条件-x-スイープ" class="section level1">
+<h1>CTS–QCA（ctSweepS）：単一条件 X スイープ</h1>
+<p>CTS–QCA は、<strong>1つの X 条件の閾値だけを変化させ</strong>、 Y
+とその他の X の閾値は固定したまま、結果の変化を確認する手法です。</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>sweep_var   <span class="ot">&lt;-</span> <span class="st">&quot;X3&quot;</span>   <span class="co"># 閾値を変化させる対象の条件（X）</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>sweep_range <span class="ot">&lt;-</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">9</span>    <span class="co"># 試す閾値候補</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>thrY         <span class="ot">&lt;-</span> <span class="dv">7</span>     <span class="co"># Y の閾値（固定）</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>thrX_default <span class="ot">&lt;-</span> <span class="dv">7</span>     <span class="co"># その他 X の閾値（固定）</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>res_cts <span class="ot">&lt;-</span> <span class="fu">ctSweepS</span>(</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  <span class="at">dat            =</span> dat,</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  <span class="at">Yvar           =</span> <span class="st">&quot;Y&quot;</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  <span class="at">Xvars          =</span> <span class="fu">c</span>(<span class="st">&quot;X1&quot;</span>, <span class="st">&quot;X2&quot;</span>, <span class="st">&quot;X3&quot;</span>),</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="at">sweep_var      =</span> sweep_var,</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>  <span class="at">sweep_range    =</span> sweep_range,</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>  <span class="at">thrY           =</span> thrY,</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  <span class="at">thrX_default   =</span> thrX_default,</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  <span class="at">dir.exp        =</span> <span class="dv">1</span>,</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>  <span class="at">return_details =</span> <span class="cn">FALSE</span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>)</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="fu">head</span>(res_cts)</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="co">#&gt;   threshold  expression inclS covS</span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="co">#&gt; 1         6 No solution    NA   NA</span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co">#&gt; 2         7 No solution    NA   NA</span></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="co">#&gt; 3         8 No solution    NA   NA</span></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="co">#&gt; 4         9 No solution    NA   NA</span></span></code></pre></div>
+<hr />
+</div>
+<div id="mctsqcactsweepm複数条件-x-スイープ" class="section level1">
+<h1>MCTS–QCA（ctSweepM）：複数条件 X スイープ</h1>
+<p>MCTS–QCA は、<strong>複数の X 条件の閾値を同時に変化させ</strong>、
+すべての組合せに対して QCA を実行する手法です。</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>res_mcts <span class="ot">&lt;-</span> <span class="fu">ctSweepM</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="at">dat            =</span> dat,</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="at">Yvar           =</span> <span class="st">&quot;Y&quot;</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">Xvars          =</span> <span class="fu">c</span>(<span class="st">&quot;X1&quot;</span>, <span class="st">&quot;X2&quot;</span>, <span class="st">&quot;X3&quot;</span>),</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="at">sweep_vars     =</span> <span class="fu">c</span>(<span class="st">&quot;X2&quot;</span>, <span class="st">&quot;X3&quot;</span>),</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  <span class="at">sweep_range    =</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">9</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  <span class="at">thrY           =</span> <span class="dv">7</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="at">thrX_default   =</span> <span class="dv">7</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  <span class="at">dir.exp        =</span> <span class="dv">1</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="at">return_details =</span> <span class="cn">FALSE</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>)</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; Error in ctSweepM(dat = dat, Yvar = &quot;Y&quot;, Xvars = c(&quot;X1&quot;, &quot;X2&quot;, &quot;X3&quot;), : unused arguments (sweep_vars = c(&quot;X2&quot;, &quot;X3&quot;), sweep_range = 6:9, thrX_default = 7)</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="fu">head</span>(res_mcts)</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; Error: object &#39;res_mcts&#39; not found</span></span></code></pre></div>
+<hr />
+</div>
+<div id="otsqcaotsweepアウトカム-y-のスイープ" class="section level1">
+<h1>OTS–QCA（otSweep）：アウトカム Y のスイープ</h1>
+<p>OTS–QCA は、<strong>アウトカム Y
+の閾値だけを変化させる</strong>手法です。 条件 X の閾値は固定したまま、Y
+の閾値の取り方が結果に与える影響を評価します。</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>res_ots <span class="ot">&lt;-</span> <span class="fu">otSweep</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="at">dat            =</span> dat,</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">Yvar           =</span> <span class="st">&quot;Y&quot;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">Xvars          =</span> <span class="fu">c</span>(<span class="st">&quot;X1&quot;</span>, <span class="st">&quot;X2&quot;</span>, <span class="st">&quot;X3&quot;</span>),</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">sweep_range    =</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">9</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">thrX           =</span> <span class="fu">c</span>(<span class="at">X1 =</span> <span class="dv">7</span>, <span class="at">X2 =</span> <span class="dv">7</span>, <span class="at">X3 =</span> <span class="dv">7</span>),</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="at">dir.exp        =</span> <span class="dv">1</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="at">return_details =</span> <span class="cn">FALSE</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>)</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="fu">head</span>(res_ots)</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt;   thrY  expression inclS covS</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; 1    6 No solution    NA   NA</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt; 2    7 No solution    NA   NA</span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt; 3    8 No solution    NA   NA</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt; 4    9 No solution    NA   NA</span></span></code></pre></div>
+<hr />
+</div>
+<div id="dtsqcadtsweepxy-二次元スイープ" class="section level1">
+<h1>DTS–QCA（dtSweep）：X×Y 二次元スイープ</h1>
+<p>DTS–QCA は、<strong>X の閾値（複数条件）と Y
+の閾値を同時に変化させる</strong> 最も包括的なスイープ手法です。</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>sweep_list_dts_X <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="at">X1 =</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">8</span>,</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">X2 =</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">8</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">X3 =</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">8</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>sweep_range_dts_Y <span class="ot">&lt;-</span> <span class="dv">6</span><span class="sc">:</span><span class="dv">8</span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>res_dts <span class="ot">&lt;-</span> <span class="fu">dtSweep</span>(</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  <span class="at">dat            =</span> dat,</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>  <span class="at">Yvar           =</span> <span class="st">&quot;Y&quot;</span>,</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  <span class="at">Xvars          =</span> <span class="fu">c</span>(<span class="st">&quot;X1&quot;</span>, <span class="st">&quot;X2&quot;</span>, <span class="st">&quot;X3&quot;</span>),</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>  <span class="at">sweep_list_X   =</span> sweep_list_dts_X,</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>  <span class="at">sweep_range_Y  =</span> sweep_range_dts_Y,</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>  <span class="at">dir.exp        =</span> <span class="dv">1</span>,</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>  <span class="at">return_details =</span> <span class="cn">FALSE</span></span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>)</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="fu">head</span>(res_dts)</span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="co">#&gt;   combo_id thrY             thrX  expression inclS covS</span></span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="co">#&gt; 1        1    6 X1=6, X2=6, X3=6 No solution    NA   NA</span></span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="co">#&gt; 2        1    7 X1=6, X2=6, X3=6 No solution    NA   NA</span></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="co">#&gt; 3        1    8 X1=6, X2=6, X3=6 No solution    NA   NA</span></span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="co">#&gt; 4        2    6 X1=7, X2=6, X3=6 No solution    NA   NA</span></span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="co">#&gt; 5        2    7 X1=7, X2=6, X3=6 No solution    NA   NA</span></span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="co">#&gt; 6        2    8 X1=7, X2=6, X3=6 No solution    NA   NA</span></span></code></pre></div>
+<hr />
+</div>
+<div id="出力の読み方" class="section level1">
+<h1>出力の読み方</h1>
+<p>各スイープ関数の出力には、概ね次の情報が含まれます。</p>
+<ul>
+<li>どの閾値を用いたか（X または Y の閾値）</li>
+<li>その閾値のもとで得られた最小化解（<code>expression</code>）</li>
+<li>解の整合性（<code>inclS</code>）</li>
+<li>解の被覆値（<code>covS</code>）</li>
+</ul>
+<p>一般的な解釈の目安：</p>
+<ul>
+<li><strong>整合性（inclS）がおおよそ 0.8
+以上</strong>であれば、十分条件として望ましいとされることが多いです。</li>
+<li><strong>被覆値（covS）</strong>は、その解がどの程度のケースを説明できているか（実質的な影響力）を示します。</li>
+</ul>
+<p>※ 閾値をわずかに変えただけで最小化解が大きく変化する場合、
+その結果は閾値設定に敏感であり、ロバスト性に課題があると判断できます。</p>
+<hr />
+</div>
+<div id="まとめ" class="section level1">
+<h1>まとめ</h1>
+<p>TSQCA を用いることで、QCA における閾値設定の影響を体系的に評価し、
+分析結果のロバスト性を確認できます。</p>
+<p>CTS / MCTS / OTS / DTS の各手法により、研究者は：</p>
+<ul>
+<li>頑健な因果パターンの特定</li>
+<li>閾値に敏感な結果の検出</li>
+<li>分析全体の信頼性向上</li>
+</ul>
+<p>を実現できます。</p>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>For more information on TS-QCA methodology, see:</p>
+<ul>
+<li>Ragin, C. C. (2008). <em>Redesigning Social Inquiry: Fuzzy Sets and
+Beyond</em>. University of Chicago Press. DOI: <a href="https://doi.org/10.7208/chicago/9780226702797.001.0001">10.7208/chicago/9780226702797.001.0001</a></li>
+<li>Duşa, A. (2019). <em>QCA with R: A Comprehensive Resource</em>.
+Springer. DOI: <a href="https://doi.org/10.1007/978-3-319-75668-4">10.1007/978-3-319-75668-4</a></li>
+<li>Oana, I.-E., &amp; Schneider, C. Q. (2024). A Robustness Test
+Protocol for Applied QCA: Theory and R Software Application.
+<em>Sociological Methods &amp; Research</em>, 53(1), 57–88. DOI: <a href="https://doi.org/10.1177/00491241211036158">10.1177/00491241211036158</a></li>
+</ul>
+</div>
+</div>
+<div id="セッション情報" class="section level1">
+<h1>セッション情報</h1>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&gt; R version 4.4.1 (2024-06-14 ucrt)</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; Platform: x86_64-w64-mingw32/x64</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; Running under: Windows 11 x64 (build 26200)</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt; [1] LC_COLLATE=C                    LC_CTYPE=Japanese_Japan.utf8   </span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; [3] LC_MONETARY=Japanese_Japan.utf8 LC_NUMERIC=C                   </span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt; [5] LC_TIME=Japanese_Japan.utf8    </span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt; time zone: Asia/Tokyo</span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt; tzcode source: internal</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="co">#&gt; [1] QCA_3.23    admisc_0.39 TSQCA_0.1.2</span></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a><span class="co">#&gt;  [1] cli_3.6.5         knitr_1.50        rlang_1.1.6       xfun_0.52        </span></span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="co">#&gt;  [5] otel_0.2.0        promises_1.5.0    shiny_1.12.1      jsonlite_2.0.0   </span></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="co">#&gt;  [9] xtable_1.8-4      htmltools_0.5.9   httpuv_1.6.16     sass_0.4.10      </span></span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="co">#&gt; [13] lpSolve_5.6.23    rmarkdown_2.29    evaluate_1.0.4    jquerylib_0.1.4  </span></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co">#&gt; [17] fastmap_1.2.0     yaml_2.3.10       lifecycle_1.0.4   compiler_4.4.1   </span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a><span class="co">#&gt; [21] Rcpp_1.1.0        rstudioapi_0.17.1 later_1.4.4       digest_0.6.39    </span></span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a><span class="co">#&gt; [25] R6_2.6.1          magrittr_2.0.4    bslib_0.9.0       declared_0.25    </span></span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="co">#&gt; [29] tools_4.4.1       mime_0.13         venn_1.12         cachem_1.1.0</span></span></code></pre></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
