@@ -6,8 +6,8 @@
 \usage{
 ctSweepS(
   dat,
-  Yvar,
-  Xvars,
+  outcome = NULL,
+  conditions = NULL,
   sweep_var,
   sweep_range,
   thrY,
@@ -15,20 +15,24 @@ ctSweepS(
   dir.exp = NULL,
   include = "?",
   incl.cut = 0.8,
-  n.cut = 2,
-  pri.cut = 0.5,
-  return_details = FALSE
+  n.cut = 1,
+  pri.cut = 0,
+  extract_mode = c("first", "all", "essential"),
+  return_details = TRUE,
+  Yvar = NULL,
+  Xvars = NULL
 )
 }
 \arguments{
 \item{dat}{Data frame containing the outcome and condition variables.}
 
-\item{Yvar}{Character. Outcome variable name.}
+\item{outcome}{Character. Outcome variable name. Supports negation with
+tilde prefix (e.g., \code{"~Y"}) following QCA package conventions.}
 
-\item{Xvars}{Character vector. Names of condition variables.}
+\item{conditions}{Character vector. Names of condition variables.}
 
 \item{sweep_var}{Character. Name of the condition to be swept.
-Must be one of \code{Xvars}.}
+Must be one of \code{conditions}.}
 
 \item{sweep_range}{Numeric vector. Candidate thresholds for \code{sweep_var}.}
 
@@ -47,8 +51,16 @@ for \code{\link[QCA]{minimize}}. If \code{NULL}, all set to 1.}
 
 \item{pri.cut}{PRI cutoff for \code{minimize}.}
 
-\item{return_details}{Logical. If \code{TRUE}, returns both a summary
-data frame and detailed objects for each threshold.}
+\item{extract_mode}{Character. How to handle multiple solutions:
+\code{"first"} (default), \code{"all"}, or \code{"essential"}.
+See \code{\link{qca_extract}} for details.}
+
+\item{return_details}{Logical. If \code{TRUE} (default), returns both
+summary and detailed objects for use with \code{generate_report()}.}
+
+\item{Yvar}{Deprecated. Use \code{outcome} instead.}
+
+\item{Xvars}{Deprecated. Use \code{conditions} instead.}
 }
 \value{
 If \code{return_details = FALSE}, a data frame with columns:
@@ -57,6 +69,7 @@ If \code{return_details = FALSE}, a data frame with columns:
 \item \code{expression} — minimized solution expression
 \item \code{inclS} — solution consistency
 \item \code{covS} — solution coverage
+\item (additional columns depending on \code{extract_mode})
 }
 
 If \code{return_details = TRUE}, a list with:
@@ -75,15 +88,27 @@ using user-specified thresholds, and a crisp-set QCA is executed.
 # Load sample data
 data(sample_data)
 
-# Run single condition threshold sweep on X3
+# Run single condition threshold sweep on X3 (standard)
 result <- ctSweepS(
   dat = sample_data,
-  Yvar = "Y",
-  Xvars = c("X1", "X2", "X3"),
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
   sweep_var = "X3",
   sweep_range = 6:8,
   thrY = 7,
   thrX_default = 7
 )
-head(result)
+head(result$summary)
+
+# Run with negated outcome (~Y)
+result_neg <- ctSweepS(
+  dat = sample_data,
+  outcome = "~Y",
+  conditions = c("X1", "X2", "X3"),
+  sweep_var = "X3",
+  sweep_range = 6:8,
+  thrY = 7,
+  thrX_default = 7
+)
+head(result_neg$summary)
 }

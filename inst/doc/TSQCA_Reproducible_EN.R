@@ -15,8 +15,8 @@ data("sample_data")
 dat <- sample_data
 
 # Outcome and conditions
-Yvar  <- "Y"
-Xvars <- c("X1", "X2", "X3")
+outcome  <- "Y"
+conditions <- c("X1", "X2", "X3")
 
 # Quick inspection
 str(dat)
@@ -43,85 +43,187 @@ thrX_default <- 7     # Threshold for other X conditions (fixed)
 
 res_cts <- ctSweepS(
   dat            = dat,
-  Yvar           = "Y",
-  Xvars          = c("X1", "X2", "X3"),
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
   sweep_var      = "X3",
   sweep_range    = 6:9,
   thrY           = 7,
   thrX_default   = 7,
-  dir.exp        = 1,
-  return_details = FALSE
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
 )
 
-head(res_cts)
+summary(res_cts)
 })
 
 ## ----eval=FALSE---------------------------------------------------------------
-# write.csv(res_cts, file = "TSQCA_CTS_results.csv", row.names = FALSE)
+# write.csv(res_cts$summary, file = "TSQCA_CTS_results.csv", row.names = FALSE)
 
 ## ----error=TRUE---------------------------------------------------------------
 try({
-res_mcts <- ctSweepM(
-  dat            = dat,
-  Yvar           = "Y",
-  Xvars          = c("X1", "X2", "X3"),
-  sweep_vars     = c("X2", "X3"),
-  sweep_range    = 6:9,
-  thrY           = 7,
-  thrX_default   = 7,
-  dir.exp        = 1,
-  return_details = FALSE
+# Create a sweep list specifying thresholds for each condition
+sweep_list <- list(
+  X1 = 6:7,
+  X2 = 6:7,
+  X3 = 6:7
 )
 
-head(res_mcts)
+res_mcts <- ctSweepM(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_list     = sweep_list,
+  thrY           = 7,
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
+)
+
+summary(res_mcts)
 })
 
 ## ----eval=FALSE---------------------------------------------------------------
-# write.csv(res_mcts, file = "TSQCA_MCTS_results.csv", row.names = FALSE)
+# write.csv(res_mcts$summary, file = "TSQCA_MCTS_results.csv", row.names = FALSE)
 
 ## -----------------------------------------------------------------------------
-sweep_range_ots <- 6:9
+sweep_range_ots <- 6:8
 
 res_ots <- otSweep(
   dat            = dat,
-  Yvar           = "Y",
-  Xvars          = c("X1", "X2", "X3"),
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
   sweep_range    = sweep_range_ots,
   thrX           = thrX_vec,
-  dir.exp        = 1,
-  return_details = FALSE
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
 )
 
-res_ots
+summary(res_ots)
 
 
 ## ----eval=FALSE---------------------------------------------------------------
-# write.csv(res_ots, file = "TSQCA_OTS_results.csv", row.names = FALSE)
+# write.csv(res_ots$summary, file = "TSQCA_OTS_results.csv", row.names = FALSE)
 
 ## -----------------------------------------------------------------------------
 sweep_list_dts_X <- list(
-  X1 = 6:8,
-  X2 = 6:8,
-  X3 = 6:8
+  X1 = 6:7,
+  X2 = 6:7,
+  X3 = 6:7
 )
 
-sweep_range_dts_Y <- 6:8
+sweep_range_dts_Y <- 6:7
 
 res_dts <- dtSweep(
   dat            = dat,
-  Yvar           = "Y",
-  Xvars          = c("X1", "X2", "X3"),
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
   sweep_list_X   = sweep_list_dts_X,
   sweep_range_Y  = sweep_range_dts_Y,
-  dir.exp        = 1,
-  return_details = FALSE
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
 )
 
-res_dts
+summary(res_dts)
 
 
 ## ----eval=FALSE---------------------------------------------------------------
-# write.csv(res_dts, file = "TSQCA_DTS_results.csv", row.names = FALSE)
+# write.csv(res_dts$summary, file = "TSQCA_DTS_results.csv", row.names = FALSE)
+
+## ----eval=FALSE---------------------------------------------------------------
+# res_all <- otSweep(
+#   dat            = dat,
+#   outcome        = "Y",
+#   conditions     = c("X1", "X2", "X3"),
+#   sweep_range    = 6:8,
+#   thrX           = thrX_vec,
+#   dir.exp        = c(1, 1, 1),
+#   extract_mode   = "all",
+#   return_details = TRUE
+# )
+# 
+# # View results with n_solutions column
+# head(res_all$summary)
+
+## ----eval=FALSE---------------------------------------------------------------
+# res_essential <- otSweep(
+#   dat            = dat,
+#   outcome        = "Y",
+#   conditions     = c("X1", "X2", "X3"),
+#   sweep_range    = 6:8,
+#   thrX           = thrX_vec,
+#   dir.exp        = c(1, 1, 1),
+#   extract_mode   = "essential",
+#   return_details = TRUE
+# )
+# 
+# # View results with essential prime implicants, selective terms, and unique terms
+# head(res_essential$summary)
+
+## ----eval=FALSE---------------------------------------------------------------
+# generate_report(res_ots, "TSQCA_OTS_report_full.md", dat = dat, format = "full")
+
+## ----eval=FALSE---------------------------------------------------------------
+# generate_report(res_ots, "TSQCA_OTS_report_simple.md", dat = dat, format = "simple")
+
+## ----eval=FALSE---------------------------------------------------------------
+# # Standard: conditions for Y >= threshold
+# res_Y <- otSweep(
+#   dat            = dat,
+#   outcome        = "Y",
+#   conditions     = c("X1", "X2", "X3"),
+#   sweep_range    = 6:8,
+#   thrX           = thrX_vec,
+#   dir.exp        = c(1, 1, 1)
+# )
+# 
+# # Negated: conditions for Y < threshold
+# res_negY <- otSweep(
+#   dat            = dat,
+#   outcome        = "~Y",
+#   conditions     = c("X1", "X2", "X3"),
+#   sweep_range    = 6:8,
+#   thrX           = thrX_vec,
+#   dir.exp        = c(1, 1, 1)
+# )
+# 
+# # Compare results
+# res_Y$summary
+# res_negY$summary
+# 
+# # Check negation flag
+# res_negY$params$negate_outcome
+# # [1] TRUE
+
+## ----eval=FALSE---------------------------------------------------------------
+# # View stored parameters
+# res_ots$params
+# 
+# # Example output:
+# # $outcome
+# # [1] "Y"
+# # $conditions
+# # [1] "X1" "X2" "X3"
+# # $thrX
+# # X1 X2 X3
+# #  7  7  7
+# # $incl.cut
+# # [1] 0.8
+# # $n.cut
+# # [1] 1
+# # $pri.cut
+# # [1] 0
+
+## -----------------------------------------------------------------------------
+# From path strings
+paths <- c("A*B*~C", "A*D")
+chart <- config_chart_from_paths(paths)
+cat(chart)
+
+## ----eval=FALSE---------------------------------------------------------------
+# # Charts are included by default
+# generate_report(result, "report.md", dat = dat, format = "full")
+# 
+# # Use LaTeX symbols for academic papers
+# generate_report(result, "report.md", dat = dat, chart_symbol_set = "latex")
 
 ## -----------------------------------------------------------------------------
 sessionInfo()

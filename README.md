@@ -1,8 +1,6 @@
 # TSQCA
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17899391.svg)](https://doi.org/10.5281/zenodo.17899391)
-
-[Japanese README](https://github.com/im-research-yt/TSQCA/blob/master/README_JA.md)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17899390.svg)](https://doi.org/10.5281/zenodo.17899390)
 
 TSQCA is an R package implementing **Threshold-Sweep QCA (TS-QCA)**,  
 a framework for systematically varying the thresholds used to binarize  
@@ -23,9 +21,152 @@ Implemented sweep types:
 - **OTS-QCA (otSweep)**: Sweep the threshold of Y only  
 - **DTS-QCA (dtSweep)**: Sweep X and Y thresholds simultaneously (2D sweep)
 
-> **Scope:** Version 0.1.0 focuses on **sufficiency analysis**. Necessity analysis is planned for future versions.
+> **Scope:** TSQCA focuses on **sufficiency analysis**. Necessity analysis is planned for future versions.
+
+---
+
+## Features
+
+### Multiple Solution Detection
+
+QCA minimization can produce multiple equivalent intermediate solutions. TSQCA detects and reports these cases, allowing researchers to identify robust essential prime implicants versus solution-specific selective prime implicants.
+
+Use the `extract_mode` parameter to control output:
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `"first"` | Returns only the first solution (M1) | Default, backward compatible |
+| `"all"` | Returns all solutions concatenated | See all equivalent solutions |
+| `"essential"` | Returns essential prime implicants common to all solutions | Identify robust findings |
+
+```r
+# Detect and show all solutions
+result <- otSweep(
+  dat = mydata,
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
+  sweep_range = 6:8,
+  thrX = c(X1 = 7, X2 = 7, X3 = 7),
+  extract_mode = "all"  # Show all solutions
+)
+
+# Extract essential prime implicants only
+result_essential <- otSweep(
+  dat = mydata,
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
+  sweep_range = 6:8,
+  thrX = c(X1 = 7, X2 = 7, X3 = 7),
+  extract_mode = "essential"  # Show essential prime implicants
+)
+```
+
+### Automatic Report Generation
+
+The `generate_report()` function creates comprehensive markdown reports:
+
+```r
+# Run analysis with return_details = TRUE (the default)
+result <- otSweep(
+  dat = mydata,
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
+  sweep_range = 6:8,
+  thrX = c(X1 = 7, X2 = 7, X3 = 7)
+)
+
+# Generate full report
+generate_report(result, "my_analysis.md", dat = mydata, format = "full")
+
+# Generate simple report (for journal manuscripts)
+generate_report(result, "my_analysis_simple.md", dat = mydata, format = "simple")
+```
+
+Reports include:
+- Analysis settings (for reproducibility)
+- Solution formulas with essential/selective prime implicants
+- Fit measures (consistency, coverage, PRI)
+- Cross-threshold comparison tables
+
+### Configuration Charts
+
+Configuration charts are automatically included in reports. Generate Fiss-style configuration charts (Table 5 format):
+
+```r
+# Reports include configuration charts by default
+generate_report(result, "my_report.md", dat = mydata, format = "full")
+
+# Disable charts if needed
+generate_report(result, "my_report.md", dat = mydata, include_chart = FALSE)
+
+# Use LaTeX symbols for academic papers
+generate_report(result, "my_report.md", dat = mydata, chart_symbol_set = "latex")
+```
+
+Standalone chart functions are also available:
+
+```r
+# From path strings
+paths <- c("A*B*~C", "A*D")
+chart <- config_chart_from_paths(paths)
+cat(chart)
+```
+
+Output:
+```
+| Condition | M1 | M2 |
+|:--:|:--:|:--:|
+| A | ● | ● |
+| B | ● |   |
+| C | ⊗ |   |
+| D |   | ● |
+```
+
+Three symbol sets available: `"unicode"` (● / ⊗), `"ascii"` (O / X), `"latex"` ($\bullet$ / $\otimes$)
+
+### S3 Methods
+
+All sweep functions return objects supporting S3 class methods:
+
+- `print()`: Display analysis overview with solution statistics
+- `summary()`: Display full results table with parameters
+
+```r
+result <- otSweep(...)
+print(result)    # Quick overview
+summary(result)  # Full details
+```
+
+### Negated Outcome Support
+
+Analyze conditions sufficient for the **absence** of an outcome:
+
+```r
+# Analyze when Y is low (below threshold)
+result <- otSweep(
+  dat = mydata,
+  outcome = "~Y",  # Tilde prefix for negation
+  conditions = c("X1", "X2", "X3"),
+  sweep_range = 6:9,
+  thrX = c(X1 = 7, X2 = 7, X3 = 7)
+)
+```
+
+### Terminology Note
+
+TSQCA uses precise Boolean algebra terminology:
+
+| Term | Meaning |
+|------|---------|
+| **Essential Prime Implicants (EPI)** | Terms in ALL equivalent solutions (M1, M2...) |
+| **Selective Prime Implicants (SPI)** | Terms in SOME solutions only |
+
+> **Note**: This is distinct from Fiss (2011) "Core Conditions" which compares parsimonious vs. intermediate solutions. See `docs/TSQCA_Terminology_Guide_EN.md` for details.
+
+---
 
 ## Installation
+
 ```r
 install.packages("devtools")
 devtools::install_github("im-research-yt/TSQCA")
@@ -56,13 +197,13 @@ TSQCA is built on top of the [QCA package](https://cran.r-project.org/package=QC
 # TSQCA uses these same parameters
 result <- dtSweep(
   dat = sample_data,
-  Yvar = "Y",
-  Xvars = c("X1", "X2"),
+  outcome = "Y",
+  conditions = c("X1", "X2"),
   sweep_list_X = list(X1 = 6:7, X2 = 6:7),
   sweep_range_Y = 6:7,
   incl.cut = 0.8,   # QCA parameter
-  n.cut = 2,        # QCA parameter
-  pri.cut = 0.5     # QCA parameter
+  n.cut = 1,        # QCA parameter
+  pri.cut = 0       # QCA parameter
 )
 ```
 
@@ -74,8 +215,8 @@ library(TSQCA)
 
 dat <- read.csv("sample_data.csv", fileEncoding = "UTF-8")
 
-Yvar  <- "Y"
-Xvars <- c("X1", "X2", "X3")
+outcome  <- "Y"
+conditions <- c("X1", "X2", "X3")
 
 str(dat)
 ```
@@ -108,8 +249,8 @@ sweep_list <- list(
 
 res_mcts <- ctSweepM(
   dat = dat,
-  Yvar = "Y",
-  Xvars = c("X1", "X2", "X3"),
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
   sweep_list = sweep_list,
   thrY = 7
 )
@@ -130,7 +271,9 @@ sweep_list <- list(
 
 **Best Practice**: Always specify thresholds explicitly for each variable based on its data type.
 
-# 1. CTS-QCA: single-condition X sweep (ctSweepS)
+## Usage Examples
+
+### 1. CTS-QCA: single-condition X sweep (ctSweepS)
 
 ```r
 sweep_var <- "X3"      # Condition (X) whose threshold will be varied
@@ -141,88 +284,87 @@ thrX_default <- 7      # Fixed thresholds for other X's
 
 res_cts <- ctSweepS(
   dat            = dat,
-  Yvar           = Yvar,
-  Xvars          = Xvars,
+  outcome        = outcome,
+  conditions     = conditions,
   sweep_var      = sweep_var,      # X to sweep
   sweep_range    = sweep_range,    # Threshold candidates for X
   thrY           = thrY,           # Fixed Y threshold
-  thrX_default   = thrX_default,   # Fixed thresholds for other X's
-  return_details = FALSE
+  thrX_default   = thrX_default    # Fixed thresholds for other X's
 )
 
-head(res_cts)
+summary(res_cts)
 ```
 
-# 2. MCTS-QCA: multi-condition X sweep (ctSweepM)
+### 2. MCTS-QCA: multi-condition X sweep (ctSweepM)
 
 ```r
 # Threshold candidates for each X
 sweep_list <- list(
-  X1 = 6:8,
-  X2 = 6:8,
-  X3 = 6:8
+  X1 = 6:7,
+  X2 = 6:7,
+  X3 = 6:7
 )
 
 res_mcts <- ctSweepM(
   dat            = dat,
-  Yvar           = Yvar,
-  Xvars          = Xvars,
+  outcome        = outcome,
+  conditions     = conditions,
   sweep_list     = sweep_list,     # Threshold candidates for each X
-  thrY           = 7,              # Fixed Y threshold
-  return_details = FALSE
+  thrY           = 7               # Fixed Y threshold
 )
 
-head(res_mcts)
+summary(res_mcts)
 ```
 
-# 3. OTS-QCA: outcome Y sweep (otSweep)
+### 3. OTS-QCA: outcome Y sweep (otSweep)
 
 ```r
 thrX <- c(X1 = 7, X2 = 7, X3 = 7)  # Fixed thresholds for X
-sweep_range_Y <- 6:9               # Candidate thresholds for Y
+sweep_range_Y <- 6:8               # Candidate thresholds for Y
 
 res_ots <- otSweep(
   dat            = dat,
-  Yvar           = Yvar,
-  Xvars          = Xvars,
+  outcome        = outcome,
+  conditions     = conditions,
   sweep_range    = sweep_range_Y,  # Y threshold candidates
-  thrX           = thrX,           # Fixed X thresholds
-  return_details = FALSE
+  thrX           = thrX            # Fixed X thresholds
 )
 
-head(res_ots)
+summary(res_ots)
+
+# Generate report for detailed analysis
+generate_report(res_ots, "ots_report.md", dat = dat, format = "full")
 ```
 
-# 4. DTS-QCA: 2D sweep of X and Y (dtSweep)
+### 4. DTS-QCA: 2D sweep of X and Y (dtSweep)
 
 ```r
 # X-side threshold candidates (multiple conditions)
 sweep_list_X <- list(
-  X1 = 6:8,
-  X2 = 6:8,
-  X3 = 6:8
+  X1 = 6:7,
+  X2 = 6:7,
+  X3 = 6:7
 )
 
 # Y-side threshold candidates
-sweep_range_Y <- 6:8
+sweep_range_Y <- 6:7
 
 res_dts <- dtSweep(
   dat            = dat,
-  Yvar           = Yvar,
-  Xvars          = Xvars,
+  outcome        = outcome,
+  conditions     = conditions,
   sweep_list_X   = sweep_list_X,   # X threshold candidates
-  sweep_range_Y  = sweep_range_Y,  # Y threshold candidates
-  return_details = FALSE
+  sweep_range_Y  = sweep_range_Y   # Y threshold candidates
 )
 
-head(res_dts)
+summary(res_dts)
 ```
 
 ## Sample Data
 
 ```r
-d <- read.csv("sample_data.csv", fileEncoding = "UTF-8")
-save(d, file = "data/sample_data.rda")
+data(sample_data)
+str(sample_data)
 ```
 
 ## References

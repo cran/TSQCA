@@ -6,28 +6,32 @@
 \usage{
 ctSweepM(
   dat,
-  Yvar,
-  Xvars,
+  outcome = NULL,
+  conditions = NULL,
   sweep_list,
   thrY,
   dir.exp = NULL,
   include = "?",
   incl.cut = 0.8,
-  n.cut = 2,
-  pri.cut = 0.5,
-  return_details = FALSE
+  n.cut = 1,
+  pri.cut = 0,
+  extract_mode = c("first", "all", "essential"),
+  return_details = TRUE,
+  Yvar = NULL,
+  Xvars = NULL
 )
 }
 \arguments{
 \item{dat}{Data frame containing the outcome and condition variables.}
 
-\item{Yvar}{Character. Outcome variable name.}
+\item{outcome}{Character. Outcome variable name. Supports negation with
+tilde prefix (e.g., \code{"~Y"}) following QCA package conventions.}
 
-\item{Xvars}{Character vector. Names of condition variables.}
+\item{conditions}{Character vector. Names of condition variables.}
 
 \item{sweep_list}{Named list. Each element is a numeric vector of
 candidate thresholds for the corresponding X. Names must match
-\code{Xvars}.}
+\code{conditions}.}
 
 \item{thrY}{Numeric. Threshold for Y (fixed).}
 
@@ -42,8 +46,16 @@ If \code{NULL}, all set to 1.}
 
 \item{pri.cut}{PRI cutoff for \code{minimize}.}
 
-\item{return_details}{Logical. If \code{TRUE}, returns both summary
-and detailed objects.}
+\item{extract_mode}{Character. How to handle multiple solutions:
+\code{"first"} (default), \code{"all"}, or \code{"essential"}.
+See \code{\link{qca_extract}} for details.}
+
+\item{return_details}{Logical. If \code{TRUE} (default), returns both
+summary and detailed objects for use with \code{generate_report()}.}
+
+\item{Yvar}{Deprecated. Use \code{outcome} instead.}
+
+\item{Xvars}{Deprecated. Use \code{conditions} instead.}
 }
 \value{
 If \code{return_details = FALSE}, a data frame with columns:
@@ -54,6 +66,7 @@ e.g. \code{"X1=6, X2=7, X3=7"}
 \item \code{expression} — minimized solution expression
 \item \code{inclS} — solution consistency
 \item \code{covS} — solution coverage
+\item (additional columns depending on \code{extract_mode})
 }
 
 If \code{return_details = TRUE}, a list with:
@@ -79,15 +92,25 @@ sweep_list <- list(
   X2 = 6:7   # Reduced from 6:8 to 6:7
 )
 
-# Run multiple condition threshold sweep with reduced parameters
+# Run multiple condition threshold sweep with reduced parameters (standard)
 result_quick <- ctSweepM(
   dat = sample_data,
-  Yvar = "Y",
-  Xvars = c("X1", "X2"),  # Reduced from 3 to 2 conditions
+  outcome = "Y",
+  conditions = c("X1", "X2"),  # Reduced from 3 to 2 conditions
   sweep_list = sweep_list,
   thrY = 7
 )
-head(result_quick)
+head(result_quick$summary)
+
+# Run with negated outcome (~Y)
+result_neg <- ctSweepM(
+  dat = sample_data,
+  outcome = "~Y",
+  conditions = c("X1", "X2"),
+  sweep_list = sweep_list,
+  thrY = 7
+)
+head(result_neg$summary)
 
 \donttest{
 # Full multi-condition analysis with 3 conditions
@@ -100,13 +123,13 @@ sweep_list_full <- list(
 
 result_full <- ctSweepM(
   dat = sample_data,
-  Yvar = "Y",
-  Xvars = c("X1", "X2", "X3"),
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
   sweep_list = sweep_list_full,
   thrY = 7
 )
 
 # Visualize threshold-dependent solution paths
-head(result_full)
+head(result_full$summary)
 }
 }

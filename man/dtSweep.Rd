@@ -6,24 +6,28 @@
 \usage{
 dtSweep(
   dat,
-  Yvar,
-  Xvars,
+  outcome = NULL,
+  conditions = NULL,
   sweep_list_X,
   sweep_range_Y,
   dir.exp = NULL,
   include = "?",
   incl.cut = 0.8,
-  n.cut = 2,
-  pri.cut = 0.5,
-  return_details = FALSE
+  n.cut = 1,
+  pri.cut = 0,
+  extract_mode = c("first", "all", "essential"),
+  return_details = TRUE,
+  Yvar = NULL,
+  Xvars = NULL
 )
 }
 \arguments{
 \item{dat}{Data frame containing the outcome and condition variables.}
 
-\item{Yvar}{Character. Outcome variable name.}
+\item{outcome}{Character. Outcome variable name. Supports negation with
+tilde prefix (e.g., \code{"~Y"}) following QCA package conventions.}
 
-\item{Xvars}{Character vector. Names of condition variables.}
+\item{conditions}{Character vector. Names of condition variables.}
 
 \item{sweep_list_X}{Named list. Each element is a numeric vector of
 candidate thresholds for the corresponding X.}
@@ -41,18 +45,27 @@ If \code{NULL}, all set to 1.}
 
 \item{pri.cut}{PRI cutoff for \code{minimize}.}
 
-\item{return_details}{Logical. If \code{TRUE}, returns both summary and
-detailed objects.}
+\item{extract_mode}{Character. How to handle multiple solutions:
+\code{"first"} (default), \code{"all"}, or \code{"essential"}.
+See \code{\link{qca_extract}} for details.}
+
+\item{return_details}{Logical. If \code{TRUE} (default), returns both
+summary and detailed objects for use with \code{generate_report()}.}
+
+\item{Yvar}{Deprecated. Use \code{outcome} instead.}
+
+\item{Xvars}{Deprecated. Use \code{conditions} instead.}
 }
 \value{
 If \code{return_details = FALSE}, a data frame with columns:
 \itemize{
-\item \code{combo_id} — index of the X-threshold combination
+\item \code{combo_id} — index of threshold combination
 \item \code{thrY} — threshold for Y
-\item \code{thrX} — character label summarizing the X thresholds
+\item \code{thrX} — character summary of X thresholds
 \item \code{expression} — minimized solution expression
 \item \code{inclS} — solution consistency
 \item \code{covS} — solution coverage
+\item (additional columns depending on \code{extract_mode})
 }
 
 If \code{return_details = TRUE}, a list with:
@@ -85,12 +98,12 @@ sweep_range_Y <- 6:7  # Reduced from 6:8 to 6:7
 # This explores 2 × 2^2 = 8 threshold combinations
 result_quick <- dtSweep(
   dat = sample_data,
-  Yvar = "Y",
-  Xvars = c("X1", "X2"),  # Reduced from 3 to 2 conditions
+  outcome = "Y",
+  conditions = c("X1", "X2"),  # Reduced from 3 to 2 conditions
   sweep_list_X = sweep_list_X,
   sweep_range_Y = sweep_range_Y
 )
-head(result_quick)
+head(result_quick$summary)
 
 \donttest{
 # Full analysis with all conditions and thresholds
@@ -105,13 +118,13 @@ sweep_range_Y_full <- 6:8
 
 result_full <- dtSweep(
   dat = sample_data,
-  Yvar = "Y",
-  Xvars = c("X1", "X2", "X3"),
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
   sweep_list_X = sweep_list_X_full,
   sweep_range_Y = sweep_range_Y_full
 )
 
 # Analyze threshold-dependent causal structures
-head(result_full)
+head(result_full$summary)
 }
 }

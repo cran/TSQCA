@@ -36,8 +36,8 @@ data("sample_data")
 dat <- sample_data
 
 # Outcome and conditions
-Yvar  <- "Y"
-Xvars <- c("X1", "X2", "X3")
+outcome  <- "Y"
+conditions <- c("X1", "X2", "X3")
 
 # Quick inspection
 str(dat)
@@ -73,22 +73,22 @@ thrX_default <- 7     # Threshold for other X conditions (fixed)
 
 res_cts <- ctSweepS(
   dat            = dat,
-  Yvar           = "Y",
-  Xvars          = c("X1", "X2", "X3"),
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
   sweep_var      = "X3",
   sweep_range    = 6:9,
   thrY           = 7,
   thrX_default   = 7,
-  dir.exp        = 1,
-  return_details = FALSE
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
 )
 
-head(res_cts)
+summary(res_cts)
 ```
 
 Export:
 ```{r, eval=FALSE}
-write.csv(res_cts, file = "TSQCA_CTS_results.csv", row.names = FALSE)
+write.csv(res_cts$summary, file = "TSQCA_CTS_results.csv", row.names = FALSE)
 ```
 
 ---
@@ -97,24 +97,29 @@ write.csv(res_cts, file = "TSQCA_CTS_results.csv", row.names = FALSE)
 
 Sweep **multiple X thresholds simultaneously**.
 ```{r, error=TRUE}
-res_mcts <- ctSweepM(
-  dat            = dat,
-  Yvar           = "Y",
-  Xvars          = c("X1", "X2", "X3"),
-  sweep_vars     = c("X2", "X3"),
-  sweep_range    = 6:9,
-  thrY           = 7,
-  thrX_default   = 7,
-  dir.exp        = 1,
-  return_details = FALSE
+# Create a sweep list specifying thresholds for each condition
+sweep_list <- list(
+  X1 = 6:7,
+  X2 = 6:7,
+  X3 = 6:7
 )
 
-head(res_mcts)
+res_mcts <- ctSweepM(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_list     = sweep_list,
+  thrY           = 7,
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
+)
+
+summary(res_mcts)
 ```
 
 Export:
 ```{r, eval=FALSE}
-write.csv(res_mcts, file = "TSQCA_MCTS_results.csv", row.names = FALSE)
+write.csv(res_mcts$summary, file = "TSQCA_MCTS_results.csv", row.names = FALSE)
 ```
 
 ---
@@ -123,25 +128,25 @@ write.csv(res_mcts, file = "TSQCA_MCTS_results.csv", row.names = FALSE)
 
 Sweep **only the outcome threshold (Y)**.
 ```{r}
-sweep_range_ots <- 6:9
+sweep_range_ots <- 6:8
 
 res_ots <- otSweep(
   dat            = dat,
-  Yvar           = "Y",
-  Xvars          = c("X1", "X2", "X3"),
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
   sweep_range    = sweep_range_ots,
   thrX           = thrX_vec,
-  dir.exp        = 1,
-  return_details = FALSE
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
 )
 
-res_ots
+summary(res_ots)
 
 ```
 
 Export:
 ```{r, eval=FALSE}
-write.csv(res_ots, file = "TSQCA_OTS_results.csv", row.names = FALSE)
+write.csv(res_ots$summary, file = "TSQCA_OTS_results.csv", row.names = FALSE)
 ```
 
 ---
@@ -151,32 +156,173 @@ write.csv(res_ots, file = "TSQCA_OTS_results.csv", row.names = FALSE)
 Two-dimensional sweep: **X thresholds × Y thresholds**.
 ```{r}
 sweep_list_dts_X <- list(
-  X1 = 6:8,
-  X2 = 6:8,
-  X3 = 6:8
+  X1 = 6:7,
+  X2 = 6:7,
+  X3 = 6:7
 )
 
-sweep_range_dts_Y <- 6:8
+sweep_range_dts_Y <- 6:7
 
 res_dts <- dtSweep(
   dat            = dat,
-  Yvar           = "Y",
-  Xvars          = c("X1", "X2", "X3"),
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
   sweep_list_X   = sweep_list_dts_X,
   sweep_range_Y  = sweep_range_dts_Y,
-  dir.exp        = 1,
-  return_details = FALSE
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
 )
 
-res_dts
+summary(res_dts)
 
 ```
 
 Export:
 ```{r, eval=FALSE}
-write.csv(res_dts, file = "TSQCA_DTS_results.csv", row.names = FALSE)
+write.csv(res_dts$summary, file = "TSQCA_DTS_results.csv", row.names = FALSE)
 ```
 
+---
+
+# 8. Using extract_mode (New in v0.2.0)
+
+Extract all solutions or essential prime implicants for robustness analysis.
+
+## Extract All Solutions
+```{r, eval=FALSE}
+res_all <- otSweep(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_range    = 6:8,
+  thrX           = thrX_vec,
+  dir.exp        = c(1, 1, 1),
+  extract_mode   = "all",
+  return_details = TRUE
+)
+
+# View results with n_solutions column
+head(res_all$summary)
+```
+
+## Extract Essential Prime Implicants
+```{r, eval=FALSE}
+res_essential <- otSweep(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_range    = 6:8,
+  thrX           = thrX_vec,
+  dir.exp        = c(1, 1, 1),
+  extract_mode   = "essential",
+  return_details = TRUE
+)
+
+# View results with essential prime implicants, selective terms, and unique terms
+head(res_essential$summary)
+```
+
+---
+
+# 9. Generating Reports (New in v0.2.0)
+
+Create comprehensive markdown reports for documentation.
+
+## Full Report
+```{r, eval=FALSE}
+generate_report(res_ots, "TSQCA_OTS_report_full.md", dat = dat, format = "full")
+```
+
+## Simple Report (for manuscripts)
+```{r, eval=FALSE}
+generate_report(res_ots, "TSQCA_OTS_report_simple.md", dat = dat, format = "simple")
+```
+
+---
+
+# 10. Negated Outcome Analysis (New in v0.3.0)
+
+Analyze conditions sufficient for the **absence** of the outcome.
+
+## Standard vs Negated Outcome
+```{r, eval=FALSE}
+# Standard: conditions for Y >= threshold
+res_Y <- otSweep(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_range    = 6:8,
+  thrX           = thrX_vec,
+  dir.exp        = c(1, 1, 1)
+)
+
+# Negated: conditions for Y < threshold
+res_negY <- otSweep(
+  dat            = dat,
+  outcome        = "~Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_range    = 6:8,
+  thrX           = thrX_vec,
+  dir.exp        = c(1, 1, 1)
+)
+
+# Compare results
+res_Y$summary
+res_negY$summary
+
+# Check negation flag
+res_negY$params$negate_outcome
+# [1] TRUE
+```
+
+---
+
+# 11. Accessing Analysis Parameters
+
+All parameters are stored for reproducibility.
+```{r, eval=FALSE}
+# View stored parameters
+res_ots$params
+
+# Example output:
+# $outcome
+# [1] "Y"
+# $conditions
+# [1] "X1" "X2" "X3"
+# $thrX
+# X1 X2 X3 
+#  7  7  7 
+# $incl.cut
+# [1] 0.8
+# $n.cut
+# [1] 1
+# $pri.cut
+# [1] 0
+```
+
+---
+
+## Configuration Charts (New in v0.5.0)
+
+Configuration charts are now automatically included in reports. You can also generate them separately:
+
+```{r}
+# From path strings
+paths <- c("A*B*~C", "A*D")
+chart <- config_chart_from_paths(paths)
+cat(chart)
+```
+
+For reports:
+```{r, eval=FALSE}
+# Charts are included by default
+generate_report(result, "report.md", dat = dat, format = "full")
+
+# Use LaTeX symbols for academic papers
+generate_report(result, "report.md", dat = dat, chart_symbol_set = "latex")
+```
+
+---
 
 ## References
 
@@ -188,7 +334,7 @@ For more information on TS-QCA methodology, see:
 
 
 
-# 8. Session Information
+# 12. Session Information
 ```{r}
 sessionInfo()
 ```

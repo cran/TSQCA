@@ -1,5 +1,6 @@
 ###############################################
 # CTS–QCA (single X) and MCTS–QCA (multiple X)
+# v0.3.0: QCA-compatible argument names + negated outcome support
 ###############################################
 
 #' CTS–QCA: Single-condition threshold sweep
@@ -9,10 +10,11 @@
 #' using user-specified thresholds, and a crisp-set QCA is executed.
 #'
 #' @param dat Data frame containing the outcome and condition variables.
-#' @param Yvar Character. Outcome variable name.
-#' @param Xvars Character vector. Names of condition variables.
+#' @param outcome Character. Outcome variable name. Supports negation with
+#'   tilde prefix (e.g., \code{"~Y"}) following QCA package conventions.
+#' @param conditions Character vector. Names of condition variables.
 #' @param sweep_var Character. Name of the condition to be swept.
-#'   Must be one of \code{Xvars}.
+#'   Must be one of \code{conditions}.
 #' @param sweep_range Numeric vector. Candidate thresholds for \code{sweep_var}.
 #' @param thrY Numeric. Threshold for Y (fixed).
 #' @param thrX_default Numeric. Default threshold for non-swept X variables.
@@ -22,8 +24,13 @@
 #' @param incl.cut Consistency cutoff for \code{\link[QCA]{truthTable}}.
 #' @param n.cut Frequency cutoff for \code{truthTable}.
 #' @param pri.cut PRI cutoff for \code{minimize}.
-#' @param return_details Logical. If \code{TRUE}, returns both a summary
-#'   data frame and detailed objects for each threshold.
+#' @param extract_mode Character. How to handle multiple solutions:
+#'   \code{"first"} (default), \code{"all"}, or \code{"essential"}.
+#'   See \code{\link{qca_extract}} for details.
+#' @param return_details Logical. If \code{TRUE} (default), returns both
+#'   summary and detailed objects for use with \code{generate_report()}.
+#' @param Yvar Deprecated. Use \code{outcome} instead.
+#' @param Xvars Deprecated. Use \code{conditions} instead.
 #'
 #' @return
 #' If \code{return_details = FALSE}, a data frame with columns:
@@ -32,6 +39,7 @@
 #'   \item \code{expression} — minimized solution expression
 #'   \item \code{inclS} — solution consistency
 #'   \item \code{covS} — solution coverage
+#'   \item (additional columns depending on \code{extract_mode})
 #' }
 #'
 #' If \code{return_details = TRUE}, a list with:
@@ -47,59 +55,133 @@
 #' # Load sample data
 #' data(sample_data)
 #' 
-#' # Run single condition threshold sweep on X3
+#' # Run single condition threshold sweep on X3 (standard)
 #' result <- ctSweepS(
 #'   dat = sample_data,
-#'   Yvar = "Y",
-#'   Xvars = c("X1", "X2", "X3"),
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2", "X3"),
 #'   sweep_var = "X3",
 #'   sweep_range = 6:8,
 #'   thrY = 7,
 #'   thrX_default = 7
 #' )
-#' head(result)
-ctSweepS <- function(dat, Yvar, Xvars,
+#' head(result$summary)
+#' 
+#' # Run with negated outcome (~Y)
+#' result_neg <- ctSweepS(
+#'   dat = sample_data,
+#'   outcome = "~Y",
+#'   conditions = c("X1", "X2", "X3"),
+#'   sweep_var = "X3",
+#'   sweep_range = 6:8,
+#'   thrY = 7,
+#'   thrX_default = 7
+#' )
+#' head(result_neg$summary)
+ctSweepS <- function(dat, 
+                     outcome = NULL, conditions = NULL,
                      sweep_var, sweep_range,
                      thrY, thrX_default = 7,
                      dir.exp = NULL, include = "?",
-                     incl.cut = 0.8, n.cut = 2, pri.cut = 0.5,
-                     return_details = FALSE) {
+                     incl.cut = 0.8, n.cut = 1, pri.cut = 0,
+                     extract_mode = c("first", "all", "essential"),
+                     return_details = TRUE,
+                     Yvar = NULL, Xvars = NULL) {
   
-  if (!sweep_var %in% Xvars) {
-    stop("sweep_var must be one of Xvars.")
+  # === Backward compatibility for deprecated arguments ===
+  if (!is.null(Yvar) && is.null(outcome)) {
+    outcome <- Yvar
+    warning("Argument 'Yvar' is deprecated. Use 'outcome' instead.",
+            call. = FALSE)
+  }
+  if (!is.null(Xvars) && is.null(conditions)) {
+    conditions <- Xvars
+    warning("Argument 'Xvars' is deprecated. Use 'conditions' instead.",
+            call. = FALSE)
   }
   
+  # === Validate required arguments ===
+  if (is.null(outcome)) {
+    stop("Argument 'outcome' is required.")
+  }
+  if (is.null(conditions)) {
+    stop("Argument 'conditions' is required.")
+  }
+  
+  # === Handle negated outcome ===
+  negate_outcome <- grepl("^~", outcome)
+  outcome_clean <- sub("^~", "", outcome)
+  
+  # Validate outcome variable exists
+  if (!outcome_clean %in% names(dat)) {
+    stop("Variable '", outcome_clean, "' not found in data.")
+  }
+  
+  # Validate condition variables exist
+  missing_conds <- setdiff(conditions, names(dat))
+  if (length(missing_conds) > 0) {
+    stop("Condition variable(s) not found in data: ", 
+         paste(missing_conds, collapse = ", "))
+  }
+  
+  extract_mode <- match.arg(extract_mode)
+  
+  if (!sweep_var %in% conditions) {
+    stop("sweep_var must be one of conditions.")
+  }
+  
+  # Initialize output data frame based on extract_mode
   df_out <- data.frame(
-    threshold  = numeric(0),
-    expression = character(0),
-    inclS      = numeric(0),
-    covS       = numeric(0),
+    threshold   = numeric(0),
+    expression  = character(0),
+    inclS       = numeric(0),
+    covS        = numeric(0),
+    n_solutions = integer(0),
     stringsAsFactors = FALSE
   )
   
+  # Add columns based on extract_mode
+  if (extract_mode == "essential") {
+    df_out$selective_terms <- character(0)
+    df_out$unique_terms     <- character(0)
+  }
+  
   details_list <- list()
+  
+  # Track thresholds with multiple solutions (for warning in "first" mode)
+  multi_sol_thresholds <- c()
+  
+  # Handle dir.exp: NULL or scalar -> expand to vector (before loop)
+  local_dir.exp <- dir.exp
+  if (is.null(local_dir.exp) || length(local_dir.exp) == 1) {
+    local_dir.exp <- rep(if (is.null(dir.exp)) 1 else dir.exp[1], length(conditions))
+    names(local_dir.exp) <- conditions
+  }
   
   for (thr in sweep_range) {
     
     # vector of thresholds for all X
-    thrX_vec <- rep(thrX_default, length(Xvars))
-    names(thrX_vec) <- Xvars
+    thrX_vec <- rep(thrX_default, length(conditions))
+    names(thrX_vec) <- conditions
     thrX_vec[sweep_var] <- thr
     
-    # binarize Y and X
-    dat_bin <- data.frame(Y = qca_bin(dat[[Yvar]], thrY))
-    for (x in Xvars) {
+    # Binarize Y and X (use cleaned outcome name)
+    dat_bin <- data.frame(Y = qca_bin(dat[[outcome_clean]], thrY))
+    for (x in conditions) {
       dat_bin[[x]] <- qca_bin(dat[[x]], thrX_vec[x])
     }
+    
+    # Determine outcome string for truthTable (with ~ if negated)
+    outcome_tt <- if (negate_outcome) "~Y" else "Y"
     
     # Truth table (wrapped in try to handle errors)
     tt <- try(
       QCA::truthTable(
         dat_bin,
-        outcome    = Yvar,
-        conditions = Xvars,
+        outcome    = outcome_tt,
+        conditions = conditions,
         show.cases = FALSE,
-        incl.cut   = incl.cut,
+        incl.cut1  = incl.cut,
         n.cut      = n.cut,
         pri.cut    = pri.cut
       ),
@@ -107,30 +189,32 @@ ctSweepS <- function(dat, Yvar, Xvars,
     )
     
     if (inherits(tt, "try-error")) {
-      df_out <- rbind(df_out, data.frame(
-        threshold  = thr,
-        expression = "No solution",
-        inclS      = NA_real_,
-        covS       = NA_real_,
+      new_row <- data.frame(
+        threshold   = thr,
+        expression  = "No solution",
+        inclS       = NA_real_,
+        covS        = NA_real_,
+        n_solutions = 0L,
         stringsAsFactors = FALSE
-      ))
+      )
+      
+      if (extract_mode == "essential") {
+        new_row$selective_terms <- NA_character_
+        new_row$unique_terms     <- NA_character_
+      }
+      
+      df_out <- rbind(df_out, new_row)
       
       if (return_details) {
         details_list[[as.character(thr)]] <- list(
           threshold   = thr,
           thrX_vec    = thrX_vec,
           truth_table = NULL,
-          solution    = NULL
+          solution    = NULL,
+          dat_bin     = NULL
         )
       }
       next
-    }
-    
-    # Directional expectations (local copy to avoid modifying argument)
-    local_dir.exp <- dir.exp
-    if (is.null(local_dir.exp)) {
-      local_dir.exp <- rep(1, length(Xvars))
-      names(local_dir.exp) <- Xvars
     }
     
     # Minimize (wrapped in try to handle errors)
@@ -147,49 +231,104 @@ ctSweepS <- function(dat, Yvar, Xvars,
     )
     
     if (inherits(sol, "try-error")) {
-      df_out <- rbind(df_out, data.frame(
-        threshold  = thr,
-        expression = "No solution",
-        inclS      = NA_real_,
-        covS       = NA_real_,
+      new_row <- data.frame(
+        threshold   = thr,
+        expression  = "No solution",
+        inclS       = NA_real_,
+        covS        = NA_real_,
+        n_solutions = 0L,
         stringsAsFactors = FALSE
-      ))
+      )
+      
+      if (extract_mode == "essential") {
+        new_row$selective_terms <- NA_character_
+        new_row$unique_terms     <- NA_character_
+      }
+      
+      df_out <- rbind(df_out, new_row)
       
       if (return_details) {
         details_list[[as.character(thr)]] <- list(
           threshold   = thr,
           thrX_vec    = thrX_vec,
           truth_table = tt,
-          solution    = NULL
+          solution    = NULL,
+          dat_bin     = dat_bin
         )
       }
       next
     }
     
-    sol_info <- qca_extract(sol)
+    sol_info <- qca_extract(sol, extract_mode = extract_mode)
     
-    df_out <- rbind(df_out, data.frame(
-      threshold  = thr,
-      expression = sol_info$expression,
-      inclS      = sol_info$inclS,
-      covS       = sol_info$covS,
+    # Track multiple solutions
+    if (sol_info$n_solutions > 1) {
+      multi_sol_thresholds <- c(multi_sol_thresholds, thr)
+    }
+    
+    # Build result row based on extract_mode
+    new_row <- data.frame(
+      threshold   = thr,
+      expression  = sol_info$expression,
+      inclS       = sol_info$inclS,
+      covS        = sol_info$covS,
+      n_solutions = sol_info$n_solutions,
       stringsAsFactors = FALSE
-    ))
+    )
+    
+    if (extract_mode == "essential") {
+      new_row$selective_terms <- sol_info$selective_terms
+      new_row$unique_terms     <- sol_info$unique_terms
+    }
+    
+    df_out <- rbind(df_out, new_row)
     
     if (return_details) {
       details_list[[as.character(thr)]] <- list(
         threshold   = thr,
         thrX_vec    = thrX_vec,
         truth_table = tt,
-        solution    = sol
+        solution    = sol,
+        dat_bin     = dat_bin
       )
     }
   }
   
   df_out <- df_out[order(df_out$threshold), ]
   
+  # Issue warning for multiple solutions
+  if (length(multi_sol_thresholds) > 0) {
+    warning(
+      "Multiple intermediate solutions exist for threshold = ",
+      paste(multi_sol_thresholds, collapse = ", "),
+      " (n_solutions > 1). ",
+      "Only the first solution (M1) and its fit metrics are shown. ",
+      "Use generate_report() for full analysis.",
+      call. = FALSE
+    )
+  }
+  
   if (return_details) {
-    return(list(summary = df_out, details = details_list))
+    result <- list(
+      summary = df_out, 
+      details = details_list,
+      params = list(
+        outcome = outcome,
+        conditions = conditions,
+        negate_outcome = negate_outcome,
+        sweep_var = sweep_var,
+        sweep_range = sweep_range,
+        thrY = thrY,
+        thrX_default = thrX_default,
+        incl.cut = incl.cut,
+        n.cut = n.cut,
+        pri.cut = pri.cut,
+        include = include,
+        dir.exp = local_dir.exp
+      )
+    )
+    class(result) <- c("ctSweepS_result", "tsqca_result", "list")
+    return(result)
   }
   
   df_out
@@ -207,11 +346,12 @@ ctSweepS <- function(dat, Yvar, Xvars,
 #' and all X variables are binarized, and a crisp-set QCA is executed.
 #'
 #' @param dat Data frame containing the outcome and condition variables.
-#' @param Yvar Character. Outcome variable name.
-#' @param Xvars Character vector. Names of condition variables.
+#' @param outcome Character. Outcome variable name. Supports negation with
+#'   tilde prefix (e.g., \code{"~Y"}) following QCA package conventions.
+#' @param conditions Character vector. Names of condition variables.
 #' @param sweep_list Named list. Each element is a numeric vector of
 #'   candidate thresholds for the corresponding X. Names must match
-#'   \code{Xvars}.
+#'   \code{conditions}.
 #' @param thrY Numeric. Threshold for Y (fixed).
 #' @param dir.exp Directional expectations for \code{minimize}.
 #'   If \code{NULL}, all set to 1.
@@ -219,8 +359,13 @@ ctSweepS <- function(dat, Yvar, Xvars,
 #' @param incl.cut Consistency cutoff for \code{truthTable}.
 #' @param n.cut Frequency cutoff for \code{truthTable}.
 #' @param pri.cut PRI cutoff for \code{minimize}.
-#' @param return_details Logical. If \code{TRUE}, returns both summary
-#'   and detailed objects.
+#' @param extract_mode Character. How to handle multiple solutions:
+#'   \code{"first"} (default), \code{"all"}, or \code{"essential"}.
+#'   See \code{\link{qca_extract}} for details.
+#' @param return_details Logical. If \code{TRUE} (default), returns both
+#'   summary and detailed objects for use with \code{generate_report()}.
+#' @param Yvar Deprecated. Use \code{outcome} instead.
+#' @param Xvars Deprecated. Use \code{conditions} instead.
 #'
 #' @return
 #' If \code{return_details = FALSE}, a data frame with columns:
@@ -231,6 +376,7 @@ ctSweepS <- function(dat, Yvar, Xvars,
 #'   \item \code{expression} — minimized solution expression
 #'   \item \code{inclS} — solution consistency
 #'   \item \code{covS} — solution coverage
+#'   \item (additional columns depending on \code{extract_mode})
 #' }
 #'
 #' If \code{return_details = TRUE}, a list with:
@@ -253,15 +399,25 @@ ctSweepS <- function(dat, Yvar, Xvars,
 #'   X2 = 6:7   # Reduced from 6:8 to 6:7
 #' )
 #' 
-#' # Run multiple condition threshold sweep with reduced parameters
+#' # Run multiple condition threshold sweep with reduced parameters (standard)
 #' result_quick <- ctSweepM(
 #'   dat = sample_data,
-#'   Yvar = "Y",
-#'   Xvars = c("X1", "X2"),  # Reduced from 3 to 2 conditions
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2"),  # Reduced from 3 to 2 conditions
 #'   sweep_list = sweep_list,
 #'   thrY = 7
 #' )
-#' head(result_quick)
+#' head(result_quick$summary)
+#' 
+#' # Run with negated outcome (~Y)
+#' result_neg <- ctSweepM(
+#'   dat = sample_data,
+#'   outcome = "~Y",
+#'   conditions = c("X1", "X2"),
+#'   sweep_list = sweep_list,
+#'   thrY = 7
+#' )
+#' head(result_neg$summary)
 #' 
 #' \donttest{
 #' # Full multi-condition analysis with 3 conditions
@@ -274,20 +430,61 @@ ctSweepS <- function(dat, Yvar, Xvars,
 #' 
 #' result_full <- ctSweepM(
 #'   dat = sample_data,
-#'   Yvar = "Y",
-#'   Xvars = c("X1", "X2", "X3"),
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2", "X3"),
 #'   sweep_list = sweep_list_full,
 #'   thrY = 7
 #' )
 #' 
 #' # Visualize threshold-dependent solution paths
-#' head(result_full)
+#' head(result_full$summary)
 #' }
-ctSweepM <- function(dat, Yvar, Xvars,
+ctSweepM <- function(dat, 
+                     outcome = NULL, conditions = NULL,
                      sweep_list, thrY,
                      dir.exp = NULL, include = "?",
-                     incl.cut = 0.8, n.cut = 2, pri.cut = 0.5,
-                     return_details = FALSE) {
+                     incl.cut = 0.8, n.cut = 1, pri.cut = 0,
+                     extract_mode = c("first", "all", "essential"),
+                     return_details = TRUE,
+                     Yvar = NULL, Xvars = NULL) {
+  
+  # === Backward compatibility for deprecated arguments ===
+  if (!is.null(Yvar) && is.null(outcome)) {
+    outcome <- Yvar
+    warning("Argument 'Yvar' is deprecated. Use 'outcome' instead.",
+            call. = FALSE)
+  }
+  if (!is.null(Xvars) && is.null(conditions)) {
+    conditions <- Xvars
+    warning("Argument 'Xvars' is deprecated. Use 'conditions' instead.",
+            call. = FALSE)
+  }
+  
+  # === Validate required arguments ===
+  if (is.null(outcome)) {
+    stop("Argument 'outcome' is required.")
+  }
+  if (is.null(conditions)) {
+    stop("Argument 'conditions' is required.")
+  }
+  
+  # === Handle negated outcome ===
+  negate_outcome <- grepl("^~", outcome)
+  outcome_clean <- sub("^~", "", outcome)
+  
+  # Validate outcome variable exists
+  if (!outcome_clean %in% names(dat)) {
+    stop("Variable '", outcome_clean, "' not found in data.")
+  }
+  
+  # Validate condition variables exist
+  missing_conds <- setdiff(conditions, names(dat))
+  if (length(missing_conds) > 0) {
+    stop("Condition variable(s) not found in data: ", 
+         paste(missing_conds, collapse = ", "))
+  }
+  
+  extract_mode <- match.arg(extract_mode)
   
   combo_mat <- expand.grid(
     sweep_list,
@@ -295,34 +492,61 @@ ctSweepM <- function(dat, Yvar, Xvars,
     stringsAsFactors = FALSE
   )
   
+  n_combos <- nrow(combo_mat)
+  
+  # Initialize output data frame based on extract_mode
   df_out <- data.frame(
-    combo_id   = seq_len(nrow(combo_mat)),
-    threshold  = NA_character_,
-    expression = NA_character_,
-    inclS      = NA_real_,
-    covS       = NA_real_,
+    combo_id    = seq_len(n_combos),
+    threshold   = NA_character_,
+    expression  = NA_character_,
+    inclS       = NA_real_,
+    covS        = NA_real_,
+    n_solutions = NA_integer_,
     stringsAsFactors = FALSE
   )
   
+  # Add columns based on extract_mode
+  if (extract_mode == "essential") {
+    df_out$selective_terms <- NA_character_
+    df_out$unique_terms     <- NA_character_
+  }
+  
   details_list <- list()
   
-  for (i in seq_len(nrow(combo_mat))) {
+  # Track combinations with multiple solutions (for warning in "first" mode)
+  multi_sol_combos <- c()
+  
+  # Handle dir.exp: NULL or scalar -> expand to vector (before loop)
+  local_dir.exp <- dir.exp
+  if (is.null(local_dir.exp) || length(local_dir.exp) == 1) {
+    local_dir.exp <- rep(if (is.null(dir.exp)) 1 else dir.exp[1], length(conditions))
+    names(local_dir.exp) <- conditions
+  }
+  
+  for (i in seq_len(n_combos)) {
     
     thrX_vec <- as.numeric(combo_mat[i, ])
     names(thrX_vec) <- names(combo_mat)
     
-    dat_bin <- data.frame(Y = qca_bin(dat[[Yvar]], thrY))
+    thrX_label <- paste(names(thrX_vec), thrX_vec,
+                        sep = "=", collapse = ", ")
+    
+    # Binarize outcome (use cleaned name)
+    dat_bin <- data.frame(Y = qca_bin(dat[[outcome_clean]], thrY))
     for (x in names(thrX_vec)) {
       dat_bin[[x]] <- qca_bin(dat[[x]], thrX_vec[x])
     }
     
+    # Determine outcome string for truthTable (with ~ if negated)
+    outcome_tt <- if (negate_outcome) "~Y" else "Y"
+    
     tt <- try(
       QCA::truthTable(
         dat_bin,
-        outcome    = Yvar,
-        conditions = Xvars,
+        outcome    = outcome_tt,
+        conditions = conditions,
         show.cases = FALSE,
-        incl.cut   = incl.cut,
+        incl.cut1  = incl.cut,
         n.cut      = n.cut,
         pri.cut    = pri.cut
       ),
@@ -330,27 +554,27 @@ ctSweepM <- function(dat, Yvar, Xvars,
     )
     
     if (inherits(tt, "try-error")) {
-      df_out$threshold[i]  <- paste(names(thrX_vec), thrX_vec,
-                                    sep = "=", collapse = ", ")
-      df_out$expression[i] <- "No solution"
-      df_out$inclS[i]      <- NA_real_
-      df_out$covS[i]       <- NA_real_
+      df_out$threshold[i]   <- thrX_label
+      df_out$expression[i]  <- "No solution"
+      df_out$inclS[i]       <- NA_real_
+      df_out$covS[i]        <- NA_real_
+      df_out$n_solutions[i] <- 0L
+      
+      if (extract_mode == "essential") {
+        df_out$selective_terms[i] <- NA_character_
+        df_out$unique_terms[i]     <- NA_character_
+      }
       
       if (return_details) {
         details_list[[i]] <- list(
           combo_id    = i,
           thrX_vec    = thrX_vec,
           truth_table = NULL,
-          solution    = NULL
+          solution    = NULL,
+          dat_bin     = NULL
         )
       }
       next
-    }
-    
-    local_dir.exp <- dir.exp
-    if (is.null(local_dir.exp)) {
-      local_dir.exp <- rep(1, length(Xvars))
-      names(local_dir.exp) <- Xvars
     }
     
     sol <- try(
@@ -366,43 +590,89 @@ ctSweepM <- function(dat, Yvar, Xvars,
     )
     
     if (inherits(sol, "try-error")) {
-      df_out$threshold[i]  <- paste(names(thrX_vec), thrX_vec,
-                                    sep = "=", collapse = ", ")
-      df_out$expression[i] <- "No solution"
-      df_out$inclS[i]      <- NA_real_
-      df_out$covS[i]       <- NA_real_
+      df_out$threshold[i]   <- thrX_label
+      df_out$expression[i]  <- "No solution"
+      df_out$inclS[i]       <- NA_real_
+      df_out$covS[i]        <- NA_real_
+      df_out$n_solutions[i] <- 0L
+      
+      if (extract_mode == "essential") {
+        df_out$selective_terms[i] <- NA_character_
+        df_out$unique_terms[i]     <- NA_character_
+      }
       
       if (return_details) {
         details_list[[i]] <- list(
           combo_id    = i,
           thrX_vec    = thrX_vec,
           truth_table = tt,
-          solution    = NULL
+          solution    = NULL,
+          dat_bin     = dat_bin
         )
       }
       next
     }
     
-    sol_info <- qca_extract(sol)
+    sol_info <- qca_extract(sol, extract_mode = extract_mode)
     
-    df_out$threshold[i]  <- paste(names(thrX_vec), thrX_vec,
-                                  sep = "=", collapse = ", ")
-    df_out$expression[i] <- sol_info$expression
-    df_out$inclS[i]      <- sol_info$inclS
-    df_out$covS[i]       <- sol_info$covS
+    # Track multiple solutions
+    if (sol_info$n_solutions > 1) {
+      multi_sol_combos <- c(multi_sol_combos, i)
+    }
+    
+    df_out$threshold[i]   <- thrX_label
+    df_out$expression[i]  <- sol_info$expression
+    df_out$inclS[i]       <- sol_info$inclS
+    df_out$covS[i]        <- sol_info$covS
+    df_out$n_solutions[i] <- sol_info$n_solutions
+    
+    if (extract_mode == "essential") {
+      df_out$selective_terms[i] <- sol_info$selective_terms
+      df_out$unique_terms[i]     <- sol_info$unique_terms
+    }
     
     if (return_details) {
       details_list[[i]] <- list(
         combo_id    = i,
         thrX_vec    = thrX_vec,
         truth_table = tt,
-        solution    = sol
+        solution    = sol,
+        dat_bin     = dat_bin
       )
     }
   }
   
+  # Issue warning for multiple solutions
+  if (length(multi_sol_combos) > 0) {
+    n_multi <- length(multi_sol_combos)
+    warning(
+      "Multiple intermediate solutions exist for ", n_multi, " combination(s) ",
+      "(n_solutions > 1). ",
+      "Only the first solution (M1) and its fit metrics are shown. ",
+      "Use generate_report() for full analysis.",
+      call. = FALSE
+    )
+  }
+  
   if (return_details) {
-    return(list(summary = df_out, details = details_list))
+    result <- list(
+      summary = df_out, 
+      details = details_list,
+      params = list(
+        outcome = outcome,
+        conditions = conditions,
+        negate_outcome = negate_outcome,
+        sweep_list = sweep_list,
+        thrY = thrY,
+        incl.cut = incl.cut,
+        n.cut = n.cut,
+        pri.cut = pri.cut,
+        include = include,
+        dir.exp = local_dir.exp
+      )
+    )
+    class(result) <- c("ctSweepM_result", "tsqca_result", "list")
+    return(result)
   }
   
   df_out
