@@ -6,6 +6,60 @@ knitr::opts_chunk$set(
 
 ## -----------------------------------------------------------------------------
 library(TSQCA)
+data(sample_data)
+thrX <- c(X1 = 7, X2 = 7, X3 = 7)
+
+# 1. Complex Solution (default, most conservative)
+result_comp <- otSweep(
+  dat = sample_data,
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
+  sweep_range = 7,
+  thrX = thrX
+  # include = "" (default), dir.exp = NULL (default)
+)
+cat("Complex Solution:", result_comp$summary$expression, "\n")
+
+# 2. Parsimonious Solution (uses all logical remainders)
+result_pars <- otSweep(
+  dat = sample_data,
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
+  sweep_range = 7,
+  thrX = thrX,
+  include = "?"  # Include logical remainders
+)
+cat("Parsimonious Solution:", result_pars$summary$expression, "\n")
+
+# 3. Intermediate Solution (theory-guided remainders)
+result_int <- otSweep(
+  dat = sample_data,
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
+  sweep_range = 7,
+  thrX = thrX,
+  include = "?",
+  dir.exp = c(1, 1, 1)  # All conditions expected to contribute positively
+)
+cat("Intermediate Solution:", result_int$summary$expression, "\n")
+
+## ----eval=FALSE---------------------------------------------------------------
+# # v1.0.0 (intermediate solution by default due to bug)
+# result <- otSweep(dat, "Y", c("X1", "X2", "X3"), sweep_range = 7, thrX = thrX)
+# 
+# # v1.1.0: To get the same result as v1.0.0, explicitly specify:
+# result <- otSweep(
+#   dat = sample_data,
+#   outcome = "Y",
+#   conditions = c("X1", "X2", "X3"),
+#   sweep_range = 7,
+#   thrX = thrX,
+#   include = "?",
+#   dir.exp = c(1, 1, 1)  # Explicit intermediate solution
+# )
+
+## -----------------------------------------------------------------------------
+library(TSQCA)
 data("sample_data")
 dat <- sample_data
 str(dat)
@@ -22,13 +76,15 @@ conditions <- c("X1", "X2", "X3")
 #   X3 = 6:8     # Continuous: sweep thresholds
 # )
 # 
+# # Using intermediate solution (most common in publications)
 # res_mixed <- ctSweepM(
 #   dat            = dat,
 #   outcome        = "Y",
 #   conditions     = c("X1", "X2", "X3"),
 #   sweep_list     = sweep_list,
 #   thrY           = 7,
-#   dir.exp        = c(1, 1, 1)
+#   include        = "?",           # Include logical remainders
+#   dir.exp        = c(1, 1, 1)     # Directional expectations (intermediate)
 # )
 
 ## ----eval=FALSE---------------------------------------------------------------
@@ -61,6 +117,7 @@ sweep_range <- 6:9    # Candidate threshold values to evaluate
 thrY         <- 7     # Outcome (Y) threshold (fixed)
 thrX_default <- 7     # Threshold for other X conditions (fixed)
 
+# Default: Complex solution (include = "", dir.exp = NULL)
 res_cts <- ctSweepS(
   dat            = dat,
   outcome        = "Y",
@@ -69,11 +126,29 @@ res_cts <- ctSweepS(
   sweep_range    = sweep_range,
   thrY           = thrY,
   thrX_default   = thrX_default,
-  dir.exp        = c(1, 1, 1),
   return_details = TRUE
 )
 
 summary(res_cts)
+})
+
+## ----error=TRUE---------------------------------------------------------------
+try({
+# Intermediate solution: specify include = "?" and dir.exp
+res_cts_int <- ctSweepS(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_var      = sweep_var,
+  sweep_range    = sweep_range,
+  thrY           = thrY,
+  thrX_default   = thrX_default,
+  include        = "?",           # Include logical remainders
+  dir.exp        = c(1, 1, 1),    # Directional expectations
+  return_details = TRUE
+)
+
+summary(res_cts_int)
 })
 
 ## ----error=TRUE---------------------------------------------------------------
@@ -85,31 +160,63 @@ sweep_list <- list(
   X3 = 6:7
 )
 
+# Default: Complex solution
 res_mcts <- ctSweepM(
   dat            = dat,
   outcome        = "Y",
   conditions     = c("X1", "X2", "X3"),
   sweep_list     = sweep_list,
   thrY           = 7,
-  dir.exp        = c(1, 1, 1),
   return_details = TRUE
 )
 
 summary(res_mcts)
 })
 
+## ----error=TRUE---------------------------------------------------------------
+try({
+# Intermediate solution: specify include = "?" and dir.exp
+res_mcts_int <- ctSweepM(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_list     = sweep_list,
+  thrY           = 7,
+  include        = "?",
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
+)
+
+summary(res_mcts_int)
+})
+
 ## -----------------------------------------------------------------------------
+# Default: Complex solution
 res_ots <- otSweep(
   dat            = dat,
   outcome        = "Y",
   conditions     = c("X1", "X2", "X3"),
   sweep_range    = 6:8,
   thrX           = c(X1 = 7, X2 = 7, X3 = 7),
-  dir.exp        = c(1, 1, 1),
   return_details = TRUE
 )
 
 summary(res_ots)
+
+## -----------------------------------------------------------------------------
+# Intermediate solution: specify include = "?" and dir.exp
+res_ots_int <- otSweep(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_range    = 6:8,
+  thrX           = c(X1 = 7, X2 = 7, X3 = 7),
+  include        = "?",
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
+)
+
+summary(res_ots_int)
 
 ## -----------------------------------------------------------------------------
 sweep_list_dts_X <- list(
@@ -120,17 +227,32 @@ sweep_list_dts_X <- list(
 
 sweep_range_dts_Y <- 6:7
 
+# Default: Complex solution
 res_dts <- dtSweep(
   dat            = dat,
   outcome        = "Y",
   conditions     = c("X1", "X2", "X3"),
   sweep_list_X   = sweep_list_dts_X,
   sweep_range_Y  = sweep_range_dts_Y,
-  dir.exp        = c(1, 1, 1),
   return_details = TRUE
 )
 
 summary(res_dts)
+
+## -----------------------------------------------------------------------------
+# Intermediate solution: specify include = "?" and dir.exp
+res_dts_int <- dtSweep(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_list_X   = sweep_list_dts_X,
+  sweep_range_Y  = sweep_range_dts_Y,
+  include        = "?",
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
+)
+
+summary(res_dts_int)
 
 ## ----eval=FALSE---------------------------------------------------------------
 # # Returns only the first solution (M1)

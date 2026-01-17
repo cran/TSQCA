@@ -11,7 +11,7 @@ otSweep(
   sweep_range,
   thrX,
   dir.exp = NULL,
-  include = "?",
+  include = "",
   incl.cut = 0.8,
   n.cut = 1,
   pri.cut = 0,
@@ -35,9 +35,17 @@ tilde prefix (e.g., \code{"~Y"}) following QCA package conventions.}
 with names matching \code{conditions}.}
 
 \item{dir.exp}{Directional expectations for \code{minimize}.
-If \code{NULL}, all set to 1.}
+If \code{NULL} (default), no directional expectations are applied.
+To compute the \strong{intermediate solution}, specify a numeric vector
+(1, 0, or -1 for each condition). Example: \code{dir.exp = c(1, 1, 1)}
+for three conditions all expected to contribute positively.}
 
-\item{include}{Inclusion rule for \code{minimize}.}
+\item{include}{Inclusion rule for \code{minimize}. 
+\code{""} (default, QCA compatible) computes the \strong{complex solution}
+without logical remainders.
+Use \code{"?"} to include logical remainders for \strong{parsimonious}
+(with \code{dir.exp = NULL}) or \strong{intermediate} solutions
+(with \code{dir.exp} specified).}
 
 \item{incl.cut}{Consistency cutoff for \code{truthTable}.}
 
@@ -59,18 +67,18 @@ summary and detailed objects for use with \code{generate_report()}.}
 \value{
 If \code{return_details = FALSE}, a data frame with columns:
 \itemize{
-\item \code{thrY} — threshold for Y
-\item \code{expression} — minimized solution expression
-\item \code{inclS} — solution consistency
-\item \code{covS} — solution coverage
-\item (additional columns depending on \code{extract_mode})
+  \item \code{thrY} — threshold for Y
+  \item \code{expression} — minimized solution expression
+  \item \code{inclS} — solution consistency
+  \item \code{covS} — solution coverage
+  \item (additional columns depending on \code{extract_mode})
 }
 
 If \code{return_details = TRUE}, a list with:
 \itemize{
-\item \code{summary} — the data frame above
-\item \code{details} — per-Y-threshold list of
-\code{thrY}, \code{thrX_vec}, \code{truth_table}, \code{solution}
+  \item \code{summary} — the data frame above
+  \item \code{details} — per-Y-threshold list of
+    \code{thrY}, \code{thrX_vec}, \code{truth_table}, \code{solution}
 }
 }
 \description{
@@ -84,15 +92,56 @@ data(sample_data)
 # Set fixed thresholds for conditions
 thrX <- c(X1 = 7, X2 = 7, X3 = 7)
 
-# Run outcome threshold sweep (standard)
-result <- otSweep(
+# === Three Types of QCA Solutions ===
+
+# 1. Complex Solution (default, QCA compatible)
+#    Does not use logical remainders (most conservative)
+result_comp <- otSweep(
   dat = sample_data,
   outcome = "Y",
   conditions = c("X1", "X2", "X3"),
-  sweep_range = 6:9,
+  sweep_range = 7,
+  thrX = thrX
+  # include = "" (default), dir.exp = NULL (default)
+)
+head(result_comp$summary)
+
+# 2. Parsimonious Solution (include = "?")
+#    Uses logical remainders without directional expectations
+result_pars <- otSweep(
+  dat = sample_data,
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
+  sweep_range = 7,
+  thrX = thrX,
+  include = "?"  # Include logical remainders
+)
+head(result_pars$summary)
+
+# 3. Intermediate Solution (include = "?" + dir.exp)
+#    Uses logical remainders with directional expectations
+result_int <- otSweep(
+  dat = sample_data,
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
+  sweep_range = 7,
+  thrX = thrX,
+  include = "?",
+  dir.exp = c(1, 1, 1)  # All conditions expected positive
+)
+head(result_int$summary)
+
+# === Threshold Sweep Example ===
+
+# Sweep with complex solutions (default)
+result_sweep <- otSweep(
+  dat = sample_data,
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
+  sweep_range = 6:8,
   thrX = thrX
 )
-head(result$summary)
+head(result_sweep$summary)
 
 # Run with negated outcome (~Y)
 # Analyzes conditions for Y < threshold
@@ -100,7 +149,7 @@ result_neg <- otSweep(
   dat = sample_data,
   outcome = "~Y",
   conditions = c("X1", "X2", "X3"),
-  sweep_range = 6:9,
+  sweep_range = 6:8,
   thrX = thrX
 )
 head(result_neg$summary)

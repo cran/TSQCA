@@ -16,9 +16,9 @@ config_chart_from_paths(
 )
 }
 \arguments{
-\item{paths}{Character vector. Paths in QCA notation (e.g., "A\emph{B}~C").}
+\item{paths}{Character vector. Paths in QCA notation (e.g., "A*B*~C").}
 
-\item{symbol_set}{Character. One of \code{"unicode"}, \code{"ascii"},
+\item{symbol_set}{Character. One of \code{"unicode"}, \code{"ascii"}, 
 or \code{"latex"}.}
 
 \item{language}{Character. \code{"en"} for English, \code{"ja"} for Japanese.}

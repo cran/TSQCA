@@ -62,15 +62,49 @@ thrX_vec
 
 ---
 
+# 3.5. Three Types of QCA Solutions (New in v1.1.0)
+
+As of v1.1.0, TSQCA defaults match the QCA package:
+
+| Solution Type | `include` | `dir.exp` | When to Use |
+|--------------|-----------|-----------|-------------|
+| **Complex** (default) | `""` | `NULL` | Conservative analysis |
+| **Parsimonious** | `"?"` | `NULL` | Maximum simplification |
+| **Intermediate** | `"?"` | `c(1,1,...)` | Theory-driven (most common) |
+
+```{r}
+# Example: Three solution types at single threshold
+thrX <- c(X1 = 7, X2 = 7, X3 = 7)
+
+# Complex (default)
+res_comp <- otSweep(dat, "Y", c("X1", "X2", "X3"), sweep_range = 7, thrX = thrX)
+cat("Complex:", res_comp$summary$expression, "\n")
+
+# Parsimonious
+res_pars <- otSweep(dat, "Y", c("X1", "X2", "X3"), sweep_range = 7, thrX = thrX,
+                    include = "?")
+cat("Parsimonious:", res_pars$summary$expression, "\n")
+
+# Intermediate
+res_int <- otSweep(dat, "Y", c("X1", "X2", "X3"), sweep_range = 7, thrX = thrX,
+                   include = "?", dir.exp = c(1, 1, 1))
+cat("Intermediate:", res_int$summary$expression, "\n")
+```
+
+---
+
 # 4. CTS–QCA (ctSweepS)
 
 Sweep a **single condition X** (example: X3).
+
+## Default: Complex Solution
 ```{r, error=TRUE}
 sweep_var   <- "X3"   # Condition (X) whose threshold is swept
 sweep_range <- 6:9    # Candidate threshold values to evaluate
 thrY         <- 7     # Outcome (Y) threshold (fixed)
 thrX_default <- 7     # Threshold for other X conditions (fixed)
 
+# Default: Complex solution (include = "", dir.exp = NULL)
 res_cts <- ctSweepS(
   dat            = dat,
   outcome        = "Y",
@@ -79,11 +113,29 @@ res_cts <- ctSweepS(
   sweep_range    = 6:9,
   thrY           = 7,
   thrX_default   = 7,
-  dir.exp        = c(1, 1, 1),
   return_details = TRUE
 )
 
 summary(res_cts)
+```
+
+## Intermediate Solution (Theory-Driven)
+```{r, error=TRUE}
+# Intermediate solution: specify include = "?" and dir.exp
+res_cts_int <- ctSweepS(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_var      = "X3",
+  sweep_range    = 6:9,
+  thrY           = 7,
+  thrX_default   = 7,
+  include        = "?",
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
+)
+
+summary(res_cts_int)
 ```
 
 Export:
@@ -96,6 +148,8 @@ write.csv(res_cts$summary, file = "TSQCA_CTS_results.csv", row.names = FALSE)
 # 5. MCTS–QCA (ctSweepM)
 
 Sweep **multiple X thresholds simultaneously**.
+
+## Default: Complex Solution
 ```{r, error=TRUE}
 # Create a sweep list specifying thresholds for each condition
 sweep_list <- list(
@@ -104,17 +158,34 @@ sweep_list <- list(
   X3 = 6:7
 )
 
+# Default: Complex solution
 res_mcts <- ctSweepM(
   dat            = dat,
   outcome        = "Y",
   conditions     = c("X1", "X2", "X3"),
   sweep_list     = sweep_list,
   thrY           = 7,
-  dir.exp        = c(1, 1, 1),
   return_details = TRUE
 )
 
 summary(res_mcts)
+```
+
+## Intermediate Solution (Theory-Driven)
+```{r, error=TRUE}
+# Intermediate solution: specify include = "?" and dir.exp
+res_mcts_int <- ctSweepM(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_list     = sweep_list,
+  thrY           = 7,
+  include        = "?",
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
+)
+
+summary(res_mcts_int)
 ```
 
 Export:
@@ -127,21 +198,39 @@ write.csv(res_mcts$summary, file = "TSQCA_MCTS_results.csv", row.names = FALSE)
 # 6. OTS–QCA (otSweep)
 
 Sweep **only the outcome threshold (Y)**.
+
+## Default: Complex Solution
 ```{r}
 sweep_range_ots <- 6:8
 
+# Default: Complex solution
 res_ots <- otSweep(
   dat            = dat,
   outcome        = "Y",
   conditions     = c("X1", "X2", "X3"),
   sweep_range    = sweep_range_ots,
   thrX           = thrX_vec,
-  dir.exp        = c(1, 1, 1),
   return_details = TRUE
 )
 
 summary(res_ots)
+```
 
+## Intermediate Solution (Theory-Driven)
+```{r}
+# Intermediate solution: specify include = "?" and dir.exp
+res_ots_int <- otSweep(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_range    = sweep_range_ots,
+  thrX           = thrX_vec,
+  include        = "?",
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
+)
+
+summary(res_ots_int)
 ```
 
 Export:
@@ -154,6 +243,8 @@ write.csv(res_ots$summary, file = "TSQCA_OTS_results.csv", row.names = FALSE)
 # 7. DTS–QCA (dtSweep)
 
 Two-dimensional sweep: **X thresholds × Y thresholds**.
+
+## Default: Complex Solution
 ```{r}
 sweep_list_dts_X <- list(
   X1 = 6:7,
@@ -163,6 +254,7 @@ sweep_list_dts_X <- list(
 
 sweep_range_dts_Y <- 6:7
 
+# Default: Complex solution
 res_dts <- dtSweep(
   dat            = dat,
   outcome        = "Y",
@@ -174,7 +266,23 @@ res_dts <- dtSweep(
 )
 
 summary(res_dts)
+```
 
+## Intermediate Solution (Theory-Driven)
+```{r}
+# Intermediate solution: specify include = "?" and dir.exp
+res_dts_int <- dtSweep(
+  dat            = dat,
+  outcome        = "Y",
+  conditions     = c("X1", "X2", "X3"),
+  sweep_list_X   = sweep_list_dts_X,
+  sweep_range_Y  = sweep_range_dts_Y,
+  include        = "?",
+  dir.exp        = c(1, 1, 1),
+  return_details = TRUE
+)
+
+summary(res_dts_int)
 ```
 
 Export:
@@ -196,7 +304,8 @@ res_all <- otSweep(
   conditions     = c("X1", "X2", "X3"),
   sweep_range    = 6:8,
   thrX           = thrX_vec,
-  dir.exp        = c(1, 1, 1),
+  include        = "?",           # Include logical remainders
+  dir.exp        = c(1, 1, 1),    # Intermediate solution
   extract_mode   = "all",
   return_details = TRUE
 )
@@ -213,7 +322,8 @@ res_essential <- otSweep(
   conditions     = c("X1", "X2", "X3"),
   sweep_range    = 6:8,
   thrX           = thrX_vec,
-  dir.exp        = c(1, 1, 1),
+  include        = "?",           # Include logical remainders
+  dir.exp        = c(1, 1, 1),    # Intermediate solution
   extract_mode   = "essential",
   return_details = TRUE
 )
@@ -246,24 +356,26 @@ Analyze conditions sufficient for the **absence** of the outcome.
 
 ## Standard vs Negated Outcome
 ```{r, eval=FALSE}
-# Standard: conditions for Y >= threshold
+# Standard: conditions for Y >= threshold (intermediate solution)
 res_Y <- otSweep(
   dat            = dat,
   outcome        = "Y",
   conditions     = c("X1", "X2", "X3"),
   sweep_range    = 6:8,
   thrX           = thrX_vec,
-  dir.exp        = c(1, 1, 1)
+  include        = "?",           # Include logical remainders
+  dir.exp        = c(1, 1, 1)     # Intermediate solution
 )
 
-# Negated: conditions for Y < threshold
+# Negated: conditions for Y < threshold (intermediate solution)
 res_negY <- otSweep(
   dat            = dat,
   outcome        = "~Y",
   conditions     = c("X1", "X2", "X3"),
   sweep_range    = 6:8,
   thrX           = thrX_vec,
-  dir.exp        = c(1, 1, 1)
+  include        = "?",           # Include logical remainders
+  dir.exp        = c(1, 1, 1)     # Intermediate solution
 )
 
 # Compare results

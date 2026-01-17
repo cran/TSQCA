@@ -11,25 +11,25 @@ qca_extract(sol, extract_mode = c("first", "all", "essential"))
 
 \item{extract_mode}{Character. How to handle multiple intermediate solutions:
 \itemize{
-\item \code{"first"} - return only the first solution (M1). Default.
-\item \code{"all"} - return all solutions concatenated.
-\item \code{"essential"} - return essential prime implicants (terms
-common to all solutions), plus selective prime implicants and
-solution count.
+  \item \code{"first"} - return only the first solution (M1). Default.
+  \item \code{"all"} - return all solutions concatenated.
+  \item \code{"essential"} - return essential prime implicants (terms 
+    common to all solutions), plus selective prime implicants and 
+    solution count.
 }}
 }
 \value{
 A list with elements depending on \code{extract_mode}.
 
-For \code{"first"}: \code{expression}, \code{inclS}, \code{covS}.
+  For \code{"first"}: \code{expression}, \code{inclS}, \code{covS}.
 
-For \code{"all"}: adds \code{n_solutions}.
+  For \code{"all"}: adds \code{n_solutions}.
 
-For \code{"essential"}: adds \code{selective_terms}, \code{unique_terms},
-\code{n_solutions}.
+  For \code{"essential"}: adds \code{selective_terms}, \code{unique_terms},
+  \code{n_solutions}.
 
-If extraction fails, returns \code{"No solution"} and \code{NA_real_}
-for numeric values.
+  If extraction fails, returns \code{"No solution"} and \code{NA_real_}
+  for numeric values.
 }
 \description{
 Internal helper to obtain the solution expression, consistency

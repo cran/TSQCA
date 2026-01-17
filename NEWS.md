@@ -1,3 +1,74 @@
+# TSQCA 1.1.0
+
+*Release date: 2026-01-17*
+
+## Bug Fixes
+
+### CRITICAL: Fixed `dir.exp = NULL` Behavior
+
+**Problem:** In v1.0.0, when `dir.exp = NULL` (the default), the package incorrectly converted it to `c(1, 1, ...)`, which forced intermediate solution calculation regardless of user intent.
+
+**Fix:** `dir.exp = NULL` is now correctly passed to `QCA::minimize()` without modification.
+
+## Breaking Changes
+
+### Default Arguments Now Match QCA Package
+
+To ensure consistency with the QCA package, default argument values have been changed:
+
+| Argument | v1.0.0 Default | v1.1.0 Default | Effect |
+|----------|---------------|---------------|--------|
+| `include` | `"?"` | `""` | Complex solution (no logical remainders) |
+| `dir.exp` | `NULL` → `c(1,1,...)` (bug) | `NULL` | No directional expectations |
+
+**Result:** TSQCA now produces **complex solutions** by default, matching `QCA::minimize()` default behavior.
+
+### Solution Type Summary
+
+| Solution Type | How to Compute |
+|--------------|----------------|
+| **Complex** (default) | `include = ""`, `dir.exp = NULL` |
+| **Parsimonious** | `include = "?"`, `dir.exp = NULL` |
+| **Intermediate** | `include = "?"`, `dir.exp = c(1, 1, ...)` |
+
+### Migration Guide
+
+```r
+# v1.0.0 (incorrect: intermediate solution by default due to bug)
+result <- otSweep(dat, "Y", c("X1", "X2", "X3"), sweep_range = 7, thrX = thrX)
+
+# v1.1.0: Complex solution (new default, QCA compatible)
+result_comp <- otSweep(dat, "Y", c("X1", "X2", "X3"), sweep_range = 7, thrX = thrX)
+
+# v1.1.0: Parsimonious solution (include = "?")
+result_pars <- otSweep(dat, "Y", c("X1", "X2", "X3"), sweep_range = 7, thrX = thrX,
+                       include = "?")
+
+# v1.1.0: Intermediate solution (include = "?" + dir.exp)
+result_int <- otSweep(dat, "Y", c("X1", "X2", "X3"), sweep_range = 7, thrX = thrX,
+                      include = "?",
+                      dir.exp = c(1, 1, 1))
+```
+
+## Documentation Improvements
+
+### Enhanced Examples for All Sweep Functions
+
+All four sweep functions (`otSweep`, `dtSweep`, `ctSweepS`, `ctSweepM`) now include examples demonstrating:
+
+1. **Complex Solution** — default (QCA compatible)
+2. **Parsimonious Solution** — using `include = "?"`
+3. **Intermediate Solution** — using `include = "?"` with `dir.exp`
+
+### Updated Parameter Documentation
+
+The `@param dir.exp` and `@param include` documentation now clearly explains:
+- Default behavior produces complex solutions (QCA compatible)
+- `include = "?"` enables logical remainders for parsimonious/intermediate
+- `dir.exp` specifies directional expectations for intermediate solutions
+
+---
+
 # TSQCA 1.0.0
 
 *Release date: 2026-01-06*

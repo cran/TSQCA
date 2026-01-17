@@ -15,12 +15,12 @@ extract_terms(solutions, var_names, use_tilde = TRUE)
 }
 \value{
 List with:
-\itemize{
-\item \code{all_terms} — all terms (with duplicates)
-\item \code{unique_terms} — unique terms
-\item \code{n_total} — total term count
-\item \code{n_unique} — unique term count
-}
+  \itemize{
+    \item \code{all_terms} — all terms (with duplicates)
+    \item \code{unique_terms} — unique terms
+    \item \code{n_total} — total term count
+    \item \code{n_unique} — unique term count
+  }
 }
 \description{
 Extracts individual terms from solution expressions and returns

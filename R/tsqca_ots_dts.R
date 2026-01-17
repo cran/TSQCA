@@ -16,8 +16,16 @@
 #' @param thrX Named numeric vector. Fixed thresholds for X variables,
 #'   with names matching \code{conditions}.
 #' @param dir.exp Directional expectations for \code{minimize}.
-#'   If \code{NULL}, all set to 1.
-#' @param include Inclusion rule for \code{minimize}.
+#'   If \code{NULL} (default), no directional expectations are applied.
+#'   To compute the \strong{intermediate solution}, specify a numeric vector
+#'   (1, 0, or -1 for each condition). Example: \code{dir.exp = c(1, 1, 1)}
+#'   for three conditions all expected to contribute positively.
+#' @param include Inclusion rule for \code{minimize}. 
+#'   \code{""} (default, QCA compatible) computes the \strong{complex solution}
+#'   without logical remainders.
+#'   Use \code{"?"} to include logical remainders for \strong{parsimonious}
+#'   (with \code{dir.exp = NULL}) or \strong{intermediate} solutions
+#'   (with \code{dir.exp} specified).
 #' @param incl.cut Consistency cutoff for \code{truthTable}.
 #' @param n.cut Frequency cutoff for \code{truthTable}.
 #' @param pri.cut PRI cutoff for \code{minimize}.
@@ -55,15 +63,56 @@
 #' # Set fixed thresholds for conditions
 #' thrX <- c(X1 = 7, X2 = 7, X3 = 7)
 #' 
-#' # Run outcome threshold sweep (standard)
-#' result <- otSweep(
+#' # === Three Types of QCA Solutions ===
+#' 
+#' # 1. Complex Solution (default, QCA compatible)
+#' #    Does not use logical remainders (most conservative)
+#' result_comp <- otSweep(
 #'   dat = sample_data,
 #'   outcome = "Y",
 #'   conditions = c("X1", "X2", "X3"),
-#'   sweep_range = 6:9,
+#'   sweep_range = 7,
+#'   thrX = thrX
+#'   # include = "" (default), dir.exp = NULL (default)
+#' )
+#' head(result_comp$summary)
+#' 
+#' # 2. Parsimonious Solution (include = "?")
+#' #    Uses logical remainders without directional expectations
+#' result_pars <- otSweep(
+#'   dat = sample_data,
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2", "X3"),
+#'   sweep_range = 7,
+#'   thrX = thrX,
+#'   include = "?"  # Include logical remainders
+#' )
+#' head(result_pars$summary)
+#' 
+#' # 3. Intermediate Solution (include = "?" + dir.exp)
+#' #    Uses logical remainders with directional expectations
+#' result_int <- otSweep(
+#'   dat = sample_data,
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2", "X3"),
+#'   sweep_range = 7,
+#'   thrX = thrX,
+#'   include = "?",
+#'   dir.exp = c(1, 1, 1)  # All conditions expected positive
+#' )
+#' head(result_int$summary)
+#' 
+#' # === Threshold Sweep Example ===
+#' 
+#' # Sweep with complex solutions (default)
+#' result_sweep <- otSweep(
+#'   dat = sample_data,
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2", "X3"),
+#'   sweep_range = 6:8,
 #'   thrX = thrX
 #' )
-#' head(result$summary)
+#' head(result_sweep$summary)
 #' 
 #' # Run with negated outcome (~Y)
 #' # Analyzes conditions for Y < threshold
@@ -71,14 +120,14 @@
 #'   dat = sample_data,
 #'   outcome = "~Y",
 #'   conditions = c("X1", "X2", "X3"),
-#'   sweep_range = 6:9,
+#'   sweep_range = 6:8,
 #'   thrX = thrX
 #' )
 #' head(result_neg$summary)
 otSweep <- function(dat, 
                     outcome = NULL, conditions = NULL,
                     sweep_range, thrX,
-                    dir.exp = NULL, include = "?",
+                    dir.exp = NULL, include = "",
                     incl.cut = 0.8, n.cut = 1, pri.cut = 0,
                     extract_mode = c("first", "all", "essential"),
                     return_details = TRUE,
@@ -144,10 +193,14 @@ otSweep <- function(dat,
   # Track thresholds with multiple solutions (for warning in "first" mode)
   multi_sol_thresholds <- c()
   
-  # Handle dir.exp: NULL or scalar -> expand to vector (before loop)
+  # Handle dir.exp: scalar -> expand to vector; NULL is passed through
+
+  # NULL -> parsimonious solution; c(1,1,...) -> intermediate solution
   local_dir.exp <- dir.exp
-  if (is.null(local_dir.exp) || length(local_dir.exp) == 1) {
-    local_dir.exp <- rep(if (is.null(dir.exp)) 1 else dir.exp[1], length(conditions))
+  if (!is.null(local_dir.exp) && length(local_dir.exp) == 1) {
+    local_dir.exp <- rep(local_dir.exp[1], length(conditions))
+    names(local_dir.exp) <- conditions
+  } else if (!is.null(local_dir.exp) && is.null(names(local_dir.exp))) {
     names(local_dir.exp) <- conditions
   }
   
@@ -306,7 +359,7 @@ otSweep <- function(dat,
         n.cut = n.cut,
         pri.cut = pri.cut,
         include = include,
-        dir.exp = local_dir.exp
+        dir.exp = dir.exp  # Store original value for reproducibility
       )
     )
     class(result) <- c("otSweep_result", "tsqca_result", "list")
@@ -335,8 +388,16 @@ otSweep <- function(dat,
 #'   candidate thresholds for the corresponding X.
 #' @param sweep_range_Y Numeric vector. Candidate thresholds for Y.
 #' @param dir.exp Directional expectations for \code{minimize}.
-#'   If \code{NULL}, all set to 1.
-#' @param include Inclusion rule for \code{minimize}.
+#'   If \code{NULL} (default), no directional expectations are applied.
+#'   To compute the \strong{intermediate solution}, specify a numeric vector
+#'   (1, 0, or -1 for each condition). Example: \code{dir.exp = c(1, 1, 1)}
+#'   for three conditions all expected to contribute positively.
+#' @param include Inclusion rule for \code{minimize}. 
+#'   \code{""} (default, QCA compatible) computes the \strong{complex solution}
+#'   without logical remainders.
+#'   Use \code{"?"} to include logical remainders for \strong{parsimonious}
+#'   (with \code{dir.exp = NULL}) or \strong{intermediate} solutions
+#'   (with \code{dir.exp} specified).
 #' @param incl.cut Consistency cutoff for \code{truthTable}.
 #' @param n.cut Frequency cutoff for \code{truthTable}.
 #' @param pri.cut PRI cutoff for \code{minimize}.
@@ -373,35 +434,72 @@ otSweep <- function(dat,
 #' # Load sample data
 #' data(sample_data)
 #' 
-#' # Quick demonstration with reduced complexity (< 5 seconds)
+#' # === Three Types of QCA Solutions ===
+#' 
+#' # Quick demonstration with 2 conditions
+#' sweep_list_X <- list(X1 = 7, X2 = 7)
+#' sweep_range_Y <- 7
+#' 
+#' # 1. Complex Solution (default, QCA compatible)
+#' result_comp <- dtSweep(
+#'   dat = sample_data,
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2"),
+#'   sweep_list_X = sweep_list_X,
+#'   sweep_range_Y = sweep_range_Y
+#'   # include = "" (default), dir.exp = NULL (default)
+#' )
+#' head(result_comp$summary)
+#' 
+#' # 2. Parsimonious Solution (include = "?")
+#' result_pars <- dtSweep(
+#'   dat = sample_data,
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2"),
+#'   sweep_list_X = sweep_list_X,
+#'   sweep_range_Y = sweep_range_Y,
+#'   include = "?"  # Include logical remainders
+#' )
+#' head(result_pars$summary)
+#' 
+#' # 3. Intermediate Solution (include = "?" + dir.exp)
+#' result_int <- dtSweep(
+#'   dat = sample_data,
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2"),
+#'   sweep_list_X = sweep_list_X,
+#'   sweep_range_Y = sweep_range_Y,
+#'   include = "?",
+#'   dir.exp = c(1, 1)  # Positive expectations
+#' )
+#' head(result_int$summary)
+#' 
+#' # === Threshold Sweep Example ===
+#' 
 #' # Using 2 conditions and 2 threshold levels
 #' sweep_list_X <- list(
-#'   X1 = 6:7,  # Reduced from 6:8 to 6:7
-#'   X2 = 6:7   # Reduced from 6:8 to 6:7
+#'   X1 = 6:7,
+#'   X2 = 6:7
 #' )
+#' sweep_range_Y <- 6:7
 #' 
-#' sweep_range_Y <- 6:7  # Reduced from 6:8 to 6:7
-#' 
-#' # Run dual threshold sweep with reduced parameters
-#' # This explores 2 × 2^2 = 8 threshold combinations
+#' # Run dual threshold sweep (complex solutions by default)
 #' result_quick <- dtSweep(
 #'   dat = sample_data,
 #'   outcome = "Y",
-#'   conditions = c("X1", "X2"),  # Reduced from 3 to 2 conditions
+#'   conditions = c("X1", "X2"),
 #'   sweep_list_X = sweep_list_X,
 #'   sweep_range_Y = sweep_range_Y
 #' )
 #' head(result_quick$summary)
 #' 
 #' \donttest{
-#' # Full analysis with all conditions and thresholds
-#' # This explores 3 × 3^3 = 81 threshold combinations (takes ~10-15 seconds)
+#' # Full analysis with 3 conditions (81 combinations)
 #' sweep_list_X_full <- list(
 #'   X1 = 6:8,
 #'   X2 = 6:8,
 #'   X3 = 6:8
 #' )
-#' 
 #' sweep_range_Y_full <- 6:8
 #' 
 #' result_full <- dtSweep(
@@ -411,15 +509,13 @@ otSweep <- function(dat,
 #'   sweep_list_X = sweep_list_X_full,
 #'   sweep_range_Y = sweep_range_Y_full
 #' )
-#' 
-#' # Analyze threshold-dependent causal structures
 #' head(result_full$summary)
 #' }
 #' @export
 dtSweep <- function(dat, 
                     outcome = NULL, conditions = NULL,
                     sweep_list_X, sweep_range_Y,
-                    dir.exp = NULL, include = "?",
+                    dir.exp = NULL, include = "",
                     incl.cut = 0.8, n.cut = 1, pri.cut = 0,
                     extract_mode = c("first", "all", "essential"),
                     return_details = TRUE,
@@ -489,10 +585,14 @@ dtSweep <- function(dat,
   
   details_list <- list()
   
-  # Handle dir.exp: NULL or scalar -> expand to vector
-  if (is.null(dir.exp) || length(dir.exp) == 1) {
-    dir.exp <- rep(if (is.null(dir.exp)) 1 else dir.exp[1], length(conditions))
-    names(dir.exp) <- conditions
+  # Handle dir.exp: scalar -> expand to vector; NULL is passed through
+  # NULL -> parsimonious solution; c(1,1,...) -> intermediate solution
+  local_dir.exp <- dir.exp
+  if (!is.null(local_dir.exp) && length(local_dir.exp) == 1) {
+    local_dir.exp <- rep(local_dir.exp[1], length(conditions))
+    names(local_dir.exp) <- conditions
+  } else if (!is.null(local_dir.exp) && is.null(names(local_dir.exp))) {
+    names(local_dir.exp) <- conditions
   }
   
   # Track combinations with multiple solutions (for warning in "first" mode)
@@ -568,7 +668,7 @@ dtSweep <- function(dat,
         QCA::minimize(
           tt,
           include    = include,
-          dir.exp    = dir.exp,
+          dir.exp    = local_dir.exp,
           details    = TRUE,
           show.cases = FALSE,
           pri.cut    = pri.cut

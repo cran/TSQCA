@@ -104,6 +104,25 @@
 #'         workflows while adding new analytical capabilities
 #' }
 #' 
+#' ## Three Types of QCA Solutions
+#' 
+#' As of version 1.1.0, TSQCA uses the same defaults as \code{QCA::minimize()}:
+#' 
+#' \describe{
+#'   \item{\strong{Complex Solution} (default)}{
+#'     \code{include = ""}, \code{dir.exp = NULL}. 
+#'     Does not use logical remainders. Most conservative interpretation.
+#'   }
+#'   \item{\strong{Parsimonious Solution}}{
+#'     \code{include = "?"}, \code{dir.exp = NULL}. 
+#'     Uses all logical remainders. Most simplified form.
+#'   }
+#'   \item{\strong{Intermediate Solution}}{
+#'     \code{include = "?"}, \code{dir.exp = c(1, 1, ...)}. 
+#'     Uses only theory-consistent remainders. Most common in publications.
+#'   }
+#' }
+#' 
 #' ## Typical Workflow
 #' 
 #' \enumerate{
@@ -154,25 +173,52 @@
 #' \dontrun{
 #' # Load package
 #' library(TSQCA)
+#' data(sample_data)
 #' 
-#' # Example: OTS-QCA with outcome threshold sweep
-#' result_ots <- otSweep(
+#' # Define thresholds
+#' thrX <- c(X1 = 7, X2 = 7, X3 = 7)
+#' 
+#' # Example 1: Complex solution (default, most conservative)
+#' result_comp <- otSweep(
 #'   dat = sample_data,
-#'   Yvar = "Y",
-#'   Xvars = c("X1", "X2", "X3"),
-#'   sweep_range = 6:9,
-#'   thrX = c(X1 = 7, X2 = 7, X3 = 7)
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2", "X3"),
+#'   sweep_range = 6:8,
+#'   thrX = thrX
 #' )
 #' 
-#' # Example: CTS-QCA with single condition threshold sweep
+#' # Example 2: Parsimonious solution (uses all logical remainders)
+#' result_pars <- otSweep(
+#'   dat = sample_data,
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2", "X3"),
+#'   sweep_range = 6:8,
+#'   thrX = thrX,
+#'   include = "?"
+#' )
+#' 
+#' # Example 3: Intermediate solution (most common in publications)
+#' result_int <- otSweep(
+#'   dat = sample_data,
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2", "X3"),
+#'   sweep_range = 6:8,
+#'   thrX = thrX,
+#'   include = "?",
+#'   dir.exp = c(1, 1, 1)
+#' )
+#' 
+#' # Example 4: CTS-QCA with single condition threshold sweep
 #' result_cts <- ctSweepS(
 #'   dat = sample_data,
-#'   Yvar = "Y",
-#'   Xvars = c("X1", "X2", "X3"),
+#'   outcome = "Y",
+#'   conditions = c("X1", "X2", "X3"),
 #'   sweep_var = "X1",
 #'   sweep_range = 5:8,
 #'   thrY = 7,
-#'   thrX_default = 7
+#'   thrX_default = 7,
+#'   include = "?",
+#'   dir.exp = c(1, 1, 1)
 #' )
 #' 
 #' # See vignettes for detailed tutorials

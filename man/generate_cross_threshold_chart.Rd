@@ -19,7 +19,7 @@ ctSweepM, or dtSweep).}
 \item{conditions}{Character vector. Condition names for row ordering.
 If NULL, automatically extracted from expressions.}
 
-\item{symbol_set}{Character. One of \code{"unicode"}, \code{"ascii"},
+\item{symbol_set}{Character. One of \code{"unicode"}, \code{"ascii"}, 
 or \code{"latex"}. Default is \code{"unicode"}.}
 
 \item{chart_level}{Character. Chart aggregation level:

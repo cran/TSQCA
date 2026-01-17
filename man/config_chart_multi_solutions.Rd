@@ -13,10 +13,10 @@ config_chart_multi_solutions(
 )
 }
 \arguments{
-\item{solutions}{List of character vectors. Each element is a vector of
+\item{solutions}{List of character vectors. Each element is a vector of 
 paths for one solution.}
 
-\item{symbol_set}{Character. One of \code{"unicode"}, \code{"ascii"},
+\item{symbol_set}{Character. One of \code{"unicode"}, \code{"ascii"}, 
 or \code{"latex"}.}
 
 \item{language}{Character. \code{"en"} for English, \code{"ja"} for Japanese.}

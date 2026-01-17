@@ -27,6 +27,40 @@ Implemented sweep types:
 
 ## Features
 
+### Three Types of QCA Solutions (New in v1.1.0)
+
+As of v1.1.0, TSQCA uses the **same defaults** as `QCA::minimize()`:
+
+| Solution Type | `include` | `dir.exp` | Logical Remainders | Description |
+|--------------|-----------|-----------|-------------------|-------------|
+| **Complex** (default) | `""` | `NULL` | Not used | Most conservative |
+| **Parsimonious** | `"?"` | `NULL` | All used | Most simplified |
+| **Intermediate** | `"?"` | `c(1,1,...)` | Theory-guided | Most common in publications |
+
+```r
+data(sample_data)
+thrX <- c(X1 = 7, X2 = 7, X3 = 7)
+
+# 1. Complex Solution (default)
+result_comp <- otSweep(dat = sample_data, outcome = "Y", 
+                       conditions = c("X1", "X2", "X3"),
+                       sweep_range = 7, thrX = thrX)
+
+# 2. Parsimonious Solution
+result_pars <- otSweep(dat = sample_data, outcome = "Y",
+                       conditions = c("X1", "X2", "X3"),
+                       sweep_range = 7, thrX = thrX,
+                       include = "?")
+
+# 3. Intermediate Solution (most common in publications)
+result_int <- otSweep(dat = sample_data, outcome = "Y",
+                      conditions = c("X1", "X2", "X3"),
+                      sweep_range = 7, thrX = thrX,
+                      include = "?", dir.exp = c(1, 1, 1))
+```
+
+> **Migration from v1.0.0**: The default has changed from intermediate to complex solution. To reproduce v1.0.0 behavior, explicitly specify `include = "?"` and `dir.exp = c(1, 1, 1)`.
+
 ### Multiple Solution Detection
 
 QCA minimization can produce multiple equivalent intermediate solutions. TSQCA detects and reports these cases, allowing researchers to identify robust essential prime implicants versus solution-specific selective prime implicants.

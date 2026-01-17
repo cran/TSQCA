@@ -13,12 +13,12 @@ extract_all_metrics(IC, sol_obj = NULL)
 }
 \value{
 List with elements:
-\itemize{
-\item \code{sol_inclS} — solution consistency (or NA)
-\item \code{sol_PRI} — solution PRI (or NA)
-\item \code{sol_covS} — solution coverage (or NA)
-\item \code{term_df} — data frame of per-term metrics (or NULL)
-}
+  \itemize{
+    \item \code{sol_inclS} — solution consistency (or NA)
+    \item \code{sol_PRI} — solution PRI (or NA)
+    \item \code{sol_covS} — solution coverage (or NA)
+    \item \code{term_df} — data frame of per-term metrics (or NULL)
+  }
 }
 \description{
 Safely extracts solution-level and term-level metrics from

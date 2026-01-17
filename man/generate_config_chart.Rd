@@ -16,7 +16,7 @@ generate_config_chart(
 \item{sol}{A solution object returned by \code{QCA::minimize()}, or
 a list containing solution information.}
 
-\item{symbol_set}{Character. One of \code{"unicode"}, \code{"ascii"},
+\item{symbol_set}{Character. One of \code{"unicode"}, \code{"ascii"}, 
 or \code{"latex"}. Default is \code{"unicode"}.}
 
 \item{include_metrics}{Logical. Whether to include consistency/coverage

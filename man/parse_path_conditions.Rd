@@ -7,7 +7,7 @@
 parse_path_conditions(path)
 }
 \arguments{
-\item{path}{Character. A single path like "A\emph{B}~C"}
+\item{path}{Character. A single path like "A*B*~C"}
 }
 \value{
 List with 'present' and 'absent' condition names

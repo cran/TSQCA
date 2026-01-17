@@ -20,6 +20,6 @@ in a given term.
 }
 \details{
 Uses word boundary matching to avoid false positives when
-condition names are substrings of each other (e.g., X1 vs X10).
+  condition names are substrings of each other (e.g., X1 vs X10).
 }
 \keyword{internal}

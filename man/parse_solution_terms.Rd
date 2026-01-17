@@ -11,7 +11,7 @@ parse_solution_terms(expr)
 }
 \value{
 Character vector of terms (e.g., c("X3", "X1*X2")), or NULL if
-no valid expression.
+  no valid expression.
 }
 \description{
 Splits a solution expression (ORed terms) into individual prime implicants.

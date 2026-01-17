@@ -11,7 +11,7 @@ ctSweepM(
   sweep_list,
   thrY,
   dir.exp = NULL,
-  include = "?",
+  include = "",
   incl.cut = 0.8,
   n.cut = 1,
   pri.cut = 0,
@@ -36,9 +36,17 @@ candidate thresholds for the corresponding X. Names must match
 \item{thrY}{Numeric. Threshold for Y (fixed).}
 
 \item{dir.exp}{Directional expectations for \code{minimize}.
-If \code{NULL}, all set to 1.}
+If \code{NULL} (default), no directional expectations are applied.
+To compute the \strong{intermediate solution}, specify a numeric vector
+(1, 0, or -1 for each condition). Example: \code{dir.exp = c(1, 1, 1)}
+for three conditions all expected to contribute positively.}
 
-\item{include}{Inclusion rule for \code{minimize}.}
+\item{include}{Inclusion rule for \code{minimize}. 
+\code{""} (default, QCA compatible) computes the \strong{complex solution}
+without logical remainders.
+Use \code{"?"} to include logical remainders for \strong{parsimonious}
+(with \code{dir.exp = NULL}) or \strong{intermediate} solutions
+(with \code{dir.exp} specified).}
 
 \item{incl.cut}{Consistency cutoff for \code{truthTable}.}
 
@@ -60,20 +68,20 @@ summary and detailed objects for use with \code{generate_report()}.}
 \value{
 If \code{return_details = FALSE}, a data frame with columns:
 \itemize{
-\item \code{combo_id} — index of the threshold combination
-\item \code{threshold} — character string summarizing thresholds,
-e.g. \code{"X1=6, X2=7, X3=7"}
-\item \code{expression} — minimized solution expression
-\item \code{inclS} — solution consistency
-\item \code{covS} — solution coverage
-\item (additional columns depending on \code{extract_mode})
+  \item \code{combo_id} — index of the threshold combination
+  \item \code{threshold} — character string summarizing thresholds,
+    e.g. \code{"X1=6, X2=7, X3=7"}
+  \item \code{expression} — minimized solution expression
+  \item \code{inclS} — solution consistency
+  \item \code{covS} — solution coverage
+  \item (additional columns depending on \code{extract_mode})
 }
 
 If \code{return_details = TRUE}, a list with:
 \itemize{
-\item \code{summary} — the data frame above
-\item \code{details} — per-combination list of
-\code{combo_id}, \code{thrX_vec}, \code{truth_table}, \code{solution}
+  \item \code{summary} — the data frame above
+  \item \code{details} — per-combination list of
+    \code{combo_id}, \code{thrX_vec}, \code{truth_table}, \code{solution}
 }
 }
 \description{
@@ -85,18 +93,58 @@ and all X variables are binarized, and a crisp-set QCA is executed.
 # Load sample data
 data(sample_data)
 
-# Quick demonstration with 2 conditions (< 5 seconds)
-# This explores 2^2 = 4 threshold combinations
+# === Three Types of QCA Solutions ===
+
+# Quick demonstration with 2 conditions
+sweep_list <- list(X1 = 7, X2 = 7)
+
+# 1. Complex Solution (default, QCA compatible)
+result_comp <- ctSweepM(
+  dat = sample_data,
+  outcome = "Y",
+  conditions = c("X1", "X2"),
+  sweep_list = sweep_list,
+  thrY = 7
+  # include = "" (default), dir.exp = NULL (default)
+)
+head(result_comp$summary)
+
+# 2. Parsimonious Solution (include = "?")
+result_pars <- ctSweepM(
+  dat = sample_data,
+  outcome = "Y",
+  conditions = c("X1", "X2"),
+  sweep_list = sweep_list,
+  thrY = 7,
+  include = "?"  # Include logical remainders
+)
+head(result_pars$summary)
+
+# 3. Intermediate Solution (include = "?" + dir.exp)
+result_int <- ctSweepM(
+  dat = sample_data,
+  outcome = "Y",
+  conditions = c("X1", "X2"),
+  sweep_list = sweep_list,
+  thrY = 7,
+  include = "?",
+  dir.exp = c(1, 1)  # Positive expectations
+)
+head(result_int$summary)
+
+# === Threshold Sweep Example ===
+
+# Using 2 conditions and 2 threshold levels
 sweep_list <- list(
-  X1 = 6:7,  # Reduced from 6:8 to 6:7
-  X2 = 6:7   # Reduced from 6:8 to 6:7
+  X1 = 6:7,
+  X2 = 6:7
 )
 
-# Run multiple condition threshold sweep with reduced parameters (standard)
+# Run multiple condition threshold sweep (complex solutions by default)
 result_quick <- ctSweepM(
   dat = sample_data,
   outcome = "Y",
-  conditions = c("X1", "X2"),  # Reduced from 3 to 2 conditions
+  conditions = c("X1", "X2"),
   sweep_list = sweep_list,
   thrY = 7
 )
@@ -113,8 +161,7 @@ result_neg <- ctSweepM(
 head(result_neg$summary)
 
 \donttest{
-# Full multi-condition analysis with 3 conditions
-# This explores 3^3 = 27 threshold combinations (takes ~5-8 seconds)
+# Full multi-condition analysis (27 combinations)
 sweep_list_full <- list(
   X1 = 6:8,
   X2 = 6:8,
@@ -128,8 +175,6 @@ result_full <- ctSweepM(
   sweep_list = sweep_list_full,
   thrY = 7
 )
-
-# Visualize threshold-dependent solution paths
 head(result_full$summary)
 }
 }

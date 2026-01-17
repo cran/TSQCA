@@ -12,11 +12,11 @@ vector of terms for one solution.}
 }
 \value{
 List with:
-\itemize{
-\item \code{epi} — Essential prime implicants (in all solutions)
-\item \code{spi} — Selective prime implicants (in some solutions)
-\item \code{n_solutions} — Number of solutions
-}
+  \itemize{
+    \item \code{epi} — Essential prime implicants (in all solutions)
+    \item \code{spi} — Selective prime implicants (in some solutions)
+    \item \code{n_solutions} — Number of solutions
+  }
 }
 \description{
 Finds terms that appear in ALL solutions (EPIs) versus terms that

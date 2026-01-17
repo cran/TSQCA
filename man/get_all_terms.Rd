@@ -11,11 +11,11 @@ get_all_terms(sol_list)
 }
 \value{
 List with:
-\itemize{
-\item \code{all_terms} — all terms (with duplicates)
-\item \code{unique_terms} — unique terms
-\item \code{term_counts} — table of term frequencies
-}
+  \itemize{
+    \item \code{all_terms} — all terms (with duplicates)
+    \item \code{unique_terms} — unique terms
+    \item \code{term_counts} — table of term frequencies
+  }
 }
 \description{
 Get all unique terms from multiple solutions
