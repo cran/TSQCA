@@ -1,4 +1,5 @@
 #' @keywords internal
+#' @importFrom utils capture.output
 "_PACKAGE"
 
 #' TSQCA: Threshold-Sweep Extensions for Qualitative Comparative Analysis

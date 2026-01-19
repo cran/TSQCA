@@ -442,6 +442,12 @@ summary(res_dts_int)
 # 
 # # Use LaTeX symbols for academic papers
 # generate_report(result, "my_report.md", dat = dat, chart_symbol_set = "latex")
+# 
+# # Include QCA package raw output for verification (default is TRUE)
+# generate_report(result, "my_report.md", dat = dat, include_raw_output = TRUE)
+# 
+# # Disable raw output if not needed
+# generate_report(result, "my_report.md", dat = dat, include_raw_output = FALSE)
 
 ## -----------------------------------------------------------------------------
 # From path strings
@@ -465,6 +471,43 @@ solutions <- list(
 )
 chart <- config_chart_multi_solutions(solutions)
 cat(chart)
+
+## ----eval=FALSE---------------------------------------------------------------
+# library(QCA)
+# library(TSQCA)
+# 
+# # Step 1: Run TSQCA analysis
+# data(sample_data)
+# thrX <- c(X1 = 7, X2 = 7, X3 = 7)
+# 
+# result <- otSweep(
+#   dat = sample_data,
+#   outcome = "Y",
+#   conditions = c("X1", "X2", "X3"),
+#   sweep_range = 6:8,
+#   thrX = thrX,
+#   include = "?",
+#   dir.exp = c(1, 1, 1),
+#   return_details = TRUE
+# )
+# 
+# # Step 2: Generate report with QCA output for verification
+# generate_report(result, "my_analysis.md", dat = sample_data,
+#                 include_raw_output = TRUE)  # Default is TRUE
+# 
+# # Step 3: Verify key results directly with QCA package
+# # For each important threshold, run QCA::minimize() directly
+# dat_bin <- sample_data
+# dat_bin$Y_bin <- ifelse(sample_data$Y >= 7, 1, 0)
+# dat_bin$X1_bin <- ifelse(sample_data$X1 >= 7, 1, 0)
+# dat_bin$X2_bin <- ifelse(sample_data$X2 >= 7, 1, 0)
+# dat_bin$X3_bin <- ifelse(sample_data$X3 >= 7, 1, 0)
+# 
+# tt <- truthTable(dat_bin, outcome = "Y_bin",
+#                  conditions = c("X1_bin", "X2_bin", "X3_bin"),
+#                  incl.cut = 0.8)
+# sol <- minimize(tt, include = "?", dir.exp = c(1, 1, 1))
+# print(sol)  # Compare with TSQCA report
 
 ## -----------------------------------------------------------------------------
 sessionInfo()

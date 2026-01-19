@@ -14,7 +14,8 @@ write_full_report(
   chart_level = "term",
   solution_note = TRUE,
   solution_note_style = "simple",
-  solution_note_lang = "en"
+  solution_note_lang = "en",
+  include_raw_output = TRUE
 )
 }
 \description{

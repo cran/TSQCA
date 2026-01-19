@@ -18,6 +18,8 @@ It is designed to be inserted directly into a research article's appendix
 or provided as supplementary analysis documentation.
 All code is fully executable and ordered for reproducibility.
 
+> **Note (v1.2.0)**: If you previously used intermediate solutions (with `dir.exp`), please re-run your analyses. Version 1.2.0 fixed a bug where intermediate solutions were incorrectly extracted. Reports now also display the Solution Type and include optional QCA package output for verification.
+
 ---
 
 # 1. Load Packages

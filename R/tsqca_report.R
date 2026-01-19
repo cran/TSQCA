@@ -31,6 +31,8 @@
 #'   \code{"simple"} (default) or \code{"detailed"} (includes EPIs).
 #' @param solution_note_lang Character. Language for solution notes:
 #'   \code{"en"} (default) or \code{"ja"}.
+#' @param include_raw_output Logical. If TRUE (default), includes the raw QCA
+#'   package output (print(sol)) for each threshold for verification purposes.
 #'
 #' @return Invisibly returns the path to the generated report.
 #' @export
@@ -79,7 +81,8 @@ generate_report <- function(result,
                             chart_level = c("term", "summary"),
                             solution_note = TRUE,
                             solution_note_style = c("simple", "detailed"),
-                            solution_note_lang = c("en", "ja")) {
+                            solution_note_lang = c("en", "ja"),
+                            include_raw_output = TRUE) {
   
   format <- match.arg(format)
   chart_symbol_set <- match.arg(chart_symbol_set)
@@ -109,10 +112,12 @@ generate_report <- function(result,
   # Dispatch to appropriate format
   if (format == "full") {
     write_full_report(result, con, dat, desc_vars, include_chart, chart_symbol_set,
-                      chart_level, solution_note, solution_note_style, solution_note_lang)
+                      chart_level, solution_note, solution_note_style, solution_note_lang,
+                      include_raw_output)
   } else {
     write_simple_report(result, con, include_chart, chart_symbol_set,
-                        chart_level, solution_note, solution_note_style, solution_note_lang)
+                        chart_level, solution_note, solution_note_style, solution_note_lang,
+                        include_raw_output)
   }
   
   message("Report generated: ", output_file)
@@ -126,7 +131,8 @@ write_full_report <- function(result, con, dat = NULL, desc_vars = NULL,
                               include_chart = TRUE, chart_symbol_set = "unicode",
                               chart_level = "term",
                               solution_note = TRUE, solution_note_style = "simple",
-                              solution_note_lang = "en") {
+                              solution_note_lang = "en",
+                              include_raw_output = TRUE) {
   
   summary_df <- result$summary
   details <- result$details
@@ -185,6 +191,15 @@ write_full_report <- function(result, con, dat = NULL, desc_vars = NULL,
                         paste(params$dir.exp, collapse = ", "))
       writeLines(paste0("| Directional Expectations | ", dir_str, " |"), con)
     }
+    # Solution Type (determined from include and dir.exp)
+    solution_type <- if (is.null(params$include) || params$include == "") {
+      "Complex (Conservative)"
+    } else if (!is.null(params$dir.exp)) {
+      "Intermediate"
+    } else {
+      "Parsimonious"
+    }
+    writeLines(paste0("| **Solution Type** | **", solution_type, "** |"), con)
   }
   writeLines("\n---\n", con)
   
@@ -371,25 +386,26 @@ write_full_report <- function(result, con, dat = NULL, desc_vars = NULL,
       writeLines("#### Solution\n", con)
       writeLines(paste0("**Number of Solutions**: ", n_sol, "\n"), con)
       
-      # Get solution list
+      # Get solution list (i.sol first for true Intermediate when dir.exp specified)
       sol_list <- NULL
-      if (!is.null(sol$solution) && length(sol$solution) > 0) {
-        sol_list <- sol$solution
-      }
-      if (is.null(sol_list) || length(sol_list) == 0) {
-        if (!is.null(sol$i.sol) && length(sol$i.sol) > 0) {
-          all_sols <- list()
-          for (model_name in names(sol$i.sol)) {
-            model_sols <- sol$i.sol[[model_name]]$solution
-            if (!is.null(model_sols) && length(model_sols) > 0) {
-              for (s in model_sols) {
-                all_sols <- c(all_sols, list(s))
-              }
+      if (!is.null(sol$i.sol) && length(sol$i.sol) > 0) {
+        all_sols <- list()
+        for (model_name in names(sol$i.sol)) {
+          model_sols <- sol$i.sol[[model_name]]$solution
+          if (!is.null(model_sols) && length(model_sols) > 0) {
+            for (s in model_sols) {
+              all_sols <- c(all_sols, list(s))
             }
           }
-          if (length(all_sols) > 0) {
-            sol_list <- all_sols
-          }
+        }
+        if (length(all_sols) > 0) {
+          sol_list <- all_sols
+        }
+      }
+      # Fallback: sol$solution (Parsimonious or when dir.exp not specified)
+      if (is.null(sol_list) || length(sol_list) == 0) {
+        if (!is.null(sol$solution) && length(sol$solution) > 0) {
+          sol_list <- sol$solution
         }
       }
       
@@ -501,6 +517,15 @@ write_full_report <- function(result, con, dat = NULL, desc_vars = NULL,
           writeLines("\n", con)
         }
       }
+      
+      # ---- QCA Package Output (for verification) ----
+      if (include_raw_output) {
+        writeLines("#### QCA Package Output (for verification)\n", con)
+        writeLines("```", con)
+        raw_output <- capture.output(print(sol))
+        writeLines(raw_output, con)
+        writeLines("```\n", con)
+      }
     }
     
     # ---- Settings for Reproducibility ----
@@ -577,9 +602,24 @@ write_full_report <- function(result, con, dat = NULL, desc_vars = NULL,
       metrics <- extract_all_metrics(sol$IC, sol)
       n_sol <- get_n_solutions(sol)
       
-      # Count essential prime implicants
+      # Count essential prime implicants (i.sol first for true Intermediate)
       n_essential <- 0
-      sol_list <- sol$solution
+      sol_list <- NULL
+      if (!is.null(sol$i.sol) && length(sol$i.sol) > 0) {
+        all_sols <- list()
+        for (model_name in names(sol$i.sol)) {
+          model_sols <- sol$i.sol[[model_name]]$solution
+          if (!is.null(model_sols) && length(model_sols) > 0) {
+            for (s in model_sols) {
+              all_sols <- c(all_sols, list(s))
+            }
+          }
+        }
+        if (length(all_sols) > 0) sol_list <- all_sols
+      }
+      if (is.null(sol_list) || length(sol_list) == 0) {
+        sol_list <- sol$solution
+      }
       if (!is.null(sol_list) && length(sol_list) > 1) {
         sol_terms <- lapply(sol_list, function(x) {
           if (is.character(x)) x else unlist(strsplit(paste(x, collapse = " + "), " \\+ "))
@@ -659,6 +699,24 @@ write_full_report <- function(result, con, dat = NULL, desc_vars = NULL,
   writeLines("- **inclN**: Necessity consistency (>= 0.9 typically indicates necessary condition).", con)
   writeLines("- **RoN**: Relevance of Necessity.", con)
   writeLines("- **covN**: Necessity coverage.", con)
+  
+  writeLines("\n---\n", con)
+  
+  # ============================================
+  # 7. Verification Recommendation
+  # ============================================
+  section_num <- section_num + 1
+  writeLines(paste0("## ", section_num, ". Verification Recommendation\n"), con)
+  writeLines("**For academic publications**, always verify TSQCA results directly with the QCA package:\n", con)
+  writeLines("```r", con)
+  writeLines("library(QCA)", con)
+  writeLines("tt <- truthTable(dat, outcome = \"Y\", conditions = c(...), incl.cut = 0.8)", con)
+  writeLines("sol <- minimize(tt, include = \"?\", dir.exp = c(1, 1, ...))", con)
+  writeLines("print(sol)  # Compare with TSQCA output above", con)
+  writeLines("```\n", con)
+  writeLines("Ensure that solution expressions, consistency, and coverage values match before publishing.", con)
+  writeLines("\n", con)
+  writeLines("*Report generated by TSQCA package (https://github.com/im-research-yt/TSQCA)*", con)
 }
 
 
@@ -668,7 +726,8 @@ write_simple_report <- function(result, con, include_chart = TRUE,
                                 chart_symbol_set = "unicode",
                                 chart_level = "term",
                                 solution_note = TRUE, solution_note_style = "simple",
-                                solution_note_lang = "en") {
+                                solution_note_lang = "en",
+                                include_raw_output = TRUE) {
   
   summary_df <- result$summary
   details <- result$details
@@ -699,29 +758,29 @@ write_simple_report <- function(result, con, include_chart = TRUE,
     
     n_sol <- get_n_solutions(sol)
     
-    # IMPORTANT: Use sol$solution first - it contains the correct distinct solutions
+    # Get solution list (i.sol first for true Intermediate when dir.exp specified)
     sol_list <- NULL
     
-    # Try sol$solution first (preferred)
-    if (!is.null(sol$solution) && length(sol$solution) > 0) {
-      sol_list <- sol$solution
-    }
-    
-    # Fallback to i.sol only if sol$solution is empty
-    if (is.null(sol_list) || length(sol_list) == 0) {
-      if (!is.null(sol$i.sol) && length(sol$i.sol) > 0) {
-        all_sols <- list()
-        for (model_name in names(sol$i.sol)) {
-          model_sols <- sol$i.sol[[model_name]]$solution
-          if (!is.null(model_sols) && length(model_sols) > 0) {
-            for (s in model_sols) {
-              all_sols <- c(all_sols, list(s))
-            }
+    # Try i.sol first (contains true Intermediate solution when dir.exp specified)
+    if (!is.null(sol$i.sol) && length(sol$i.sol) > 0) {
+      all_sols <- list()
+      for (model_name in names(sol$i.sol)) {
+        model_sols <- sol$i.sol[[model_name]]$solution
+        if (!is.null(model_sols) && length(model_sols) > 0) {
+          for (s in model_sols) {
+            all_sols <- c(all_sols, list(s))
           }
         }
-        if (length(all_sols) > 0) {
-          sol_list <- all_sols
-        }
+      }
+      if (length(all_sols) > 0) {
+        sol_list <- all_sols
+      }
+    }
+    
+    # Fallback to sol$solution (Parsimonious or when dir.exp not specified)
+    if (is.null(sol_list) || length(sol_list) == 0) {
+      if (!is.null(sol$solution) && length(sol$solution) > 0) {
+        sol_list <- sol$solution
       }
     }
     
@@ -791,7 +850,32 @@ write_simple_report <- function(result, con, include_chart = TRUE,
         }
       }
       
+      # ---- QCA Package Output (for verification) ----
+      if (include_raw_output) {
+        writeLines("\n**QCA Package Output (for verification):**\n", con)
+        writeLines("```", con)
+        raw_output <- capture.output(print(sol))
+        writeLines(raw_output, con)
+        writeLines("```\n", con)
+      }
+      
       writeLines("\n", con)
     }
   }
+  
+  # ============================================
+  # Verification Recommendation
+  # ============================================
+  writeLines("---\n", con)
+  writeLines("## Verification Recommendation\n", con)
+  writeLines("**For academic publications**, always verify TSQCA results directly with the QCA package:\n", con)
+  writeLines("```r", con)
+  writeLines("library(QCA)", con)
+  writeLines("tt <- truthTable(dat, outcome = \"Y\", conditions = c(...), incl.cut = 0.8)", con)
+  writeLines("sol <- minimize(tt, include = \"?\", dir.exp = c(1, 1, ...))", con)
+  writeLines("print(sol)  # Compare with TSQCA output above", con)
+  writeLines("```\n", con)
+  writeLines("Ensure that solution expressions, consistency, and coverage values match before publishing.", con)
+  writeLines("\n", con)
+  writeLines("*Report generated by TSQCA package (https://github.com/im-research-yt/TSQCA)*", con)
 }

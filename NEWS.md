@@ -1,3 +1,72 @@
+# TSQCA 1.2.0
+
+*Release date: 2026-01-19*
+
+## Bug Fixes
+
+### CRITICAL: Fixed Intermediate Solution Extraction
+
+**Problem:** When `dir.exp` is specified for intermediate solutions, the QCA package stores:
+- `sol$solution` — Contains the **Parsimonious** solution
+- `sol$i.sol$C1P1$solution` — Contains the true **Intermediate** solution
+
+Previous versions of TSQCA incorrectly prioritized `sol$solution`, causing Parsimonious solutions to be extracted and displayed when Intermediate solutions were expected.
+
+**Fix:** All solution extraction functions now correctly prioritize `sol$i.sol` when available:
+
+- `get_n_solutions()` — Now checks `i.sol` first
+- `qca_extract()` — Now checks `i.sol` first  
+- `extract_solution_list()` — Now checks `i.sol` first
+- `write_full_report()` — Fixed 3 locations
+- `write_simple_report()` — Fixed 1 location
+
+**Impact:** Users who specified `dir.exp` for intermediate solutions may have received incorrect results in:
+- Report generation (`generate_report()`)
+- Configuration charts
+- Solution expression extraction
+
+**Verification:** The `print(sol)` output was always correct because the QCA package's print method handles this correctly. Only programmatic extraction was affected.
+
+## New Features
+
+### Solution Type Display
+
+Reports now explicitly display the solution type in the Analysis Overview section:
+
+| Include | dir.exp | **Solution Type** |
+|---------|---------|-------------------|
+| `""` | any | Complex (Conservative) |
+| `"?"` | `NULL` | Parsimonious |
+| `"?"` | specified | **Intermediate** |
+
+### QCA Package Output for Verification
+
+Added optional raw QCA output section to reports for verification purposes:
+
+```r
+generate_report(result, "report.md", include_raw_output = TRUE)  # default
+generate_report(result, "report.md", include_raw_output = FALSE) # disable
+```
+
+When enabled, each threshold's detailed results include:
+
+```
+#### QCA Package Output (for verification)
+
+```
+DEV*URB*LIT*STB + DEV*LIT*~IND*STB -> SURV
+```
+
+```
+
+This allows researchers to verify that TSQCA's extraction matches the QCA package's native output.
+
+## Migration Guide
+
+If you used intermediate solutions (with `dir.exp`) in previous versions, we recommend re-running analyses to ensure correct results. Compare your new results with `print(minimize(...))` output for verification.
+
+---
+
 # TSQCA 1.1.0
 
 *Release date: 2026-01-17*

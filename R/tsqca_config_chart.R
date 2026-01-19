@@ -794,16 +794,13 @@ get_config_labels <- function(language) {
 
 
 #' Extract solution list from QCA object
+#' @note When dir.exp is specified, the true Intermediate solution is stored in
+#'   sol$i.sol, not sol$solution (which contains the Parsimonious solution).
 #' @keywords internal
 extract_solution_list <- function(sol) {
   if (is.null(sol)) return(list())
   
-  # Method 1: Direct $solution (most common for minimize() output)
-  if (!is.null(sol$solution) && length(sol$solution) > 0) {
-    return(sol$solution)
-  }
-  
-  # Method 2: Through i.sol structure
+  # Method 1: Through i.sol structure (true Intermediate when dir.exp specified)
   if (!is.null(sol$i.sol) && length(sol$i.sol) > 0) {
     # Collect solutions from all i.sol entries
     solutions <- list()
@@ -816,6 +813,11 @@ extract_solution_list <- function(sol) {
       }
     }
     if (length(solutions) > 0) return(solutions)
+  }
+  
+  # Method 2: Direct $solution (Parsimonious or when dir.exp not specified)
+  if (!is.null(sol$solution) && length(sol$solution) > 0) {
+    return(sol$solution)
   }
   
   # Method 3: If passed as simple character vector of paths

@@ -16,7 +16,8 @@ generate_report(
   chart_level = c("term", "summary"),
   solution_note = TRUE,
   solution_note_style = c("simple", "detailed"),
-  solution_note_lang = c("en", "ja")
+  solution_note_lang = c("en", "ja"),
+  include_raw_output = TRUE
 )
 }
 \arguments{
@@ -55,6 +56,9 @@ equivalent solutions exist explaining that M1 is shown.}
 
 \item{solution_note_lang}{Character. Language for solution notes:
 \code{"en"} (default) or \code{"ja"}.}
+
+\item{include_raw_output}{Logical. If TRUE (default), includes the raw QCA
+package output (print(sol)) for each threshold for verification purposes.}
 }
 \value{
 Invisibly returns the path to the generated report.

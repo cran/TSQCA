@@ -9,4 +9,8 @@ extract_solution_list(sol)
 \description{
 Extract solution list from QCA object
 }
+\note{
+When dir.exp is specified, the true Intermediate solution is stored in
+  sol$i.sol, not sol$solution (which contains the Parsimonious solution).
+}
 \keyword{internal}

@@ -40,6 +40,8 @@ The `TSQCA` package implements four sweep methods:
 
 > **Scope:** This package focuses on **sufficiency analysis**—identifying condition combinations that are sufficient for an outcome. Necessity analysis (whether a condition is required for an outcome) involves different logical structures and evaluation metrics, and is planned for future versions.
 
+> **Important (v1.2.0)**: Version 1.2.0 fixed a critical bug where intermediate solutions (using `dir.exp`) were incorrectly extracted. If you used intermediate solutions in previous versions, please re-run your analyses. Reports now also display the Solution Type and include optional QCA package output for verification.
+
 ---
 
 # Three Types of QCA Solutions (New in v1.1.0)
@@ -838,7 +840,15 @@ generate_report(result, "my_report.md", dat = dat, include_chart = FALSE)
 
 # Use LaTeX symbols for academic papers
 generate_report(result, "my_report.md", dat = dat, chart_symbol_set = "latex")
+
+# Include QCA package raw output for verification (default is TRUE)
+generate_report(result, "my_report.md", dat = dat, include_raw_output = TRUE)
+
+# Disable raw output if not needed
+generate_report(result, "my_report.md", dat = dat, include_raw_output = FALSE)
 ```
+
+**Note (v1.2.0)**: Reports now display the **Solution Type** (Complex/Parsimonious/Intermediate) in the Analysis Overview section, and optionally include raw QCA package output for verification purposes.
 
 ## Standalone Chart Functions
 
@@ -917,6 +927,66 @@ Using CTS, MCTS, OTS, and DTS sweeps, researchers can:
 - Extract essential prime implicants for robust findings
 - Generate comprehensive reports automatically
 - Access stored parameters for reproducibility
+
+---
+
+# Verification for Academic Publications
+
+**For academic publications**, we strongly recommend verifying TSQCA results directly with the QCA package before submission. This ensures accuracy and reproducibility.
+
+## Recommended Verification Workflow
+
+```{r eval=FALSE}
+library(QCA)
+library(TSQCA)
+
+# Step 1: Run TSQCA analysis
+data(sample_data)
+thrX <- c(X1 = 7, X2 = 7, X3 = 7)
+
+result <- otSweep(
+  dat = sample_data,
+  outcome = "Y",
+  conditions = c("X1", "X2", "X3"),
+  sweep_range = 6:8,
+  thrX = thrX,
+  include = "?",
+  dir.exp = c(1, 1, 1),
+  return_details = TRUE
+)
+
+# Step 2: Generate report with QCA output for verification
+generate_report(result, "my_analysis.md", dat = sample_data, 
+                include_raw_output = TRUE)  # Default is TRUE
+
+# Step 3: Verify key results directly with QCA package
+# For each important threshold, run QCA::minimize() directly
+dat_bin <- sample_data
+dat_bin$Y_bin <- ifelse(sample_data$Y >= 7, 1, 0)
+dat_bin$X1_bin <- ifelse(sample_data$X1 >= 7, 1, 0)
+dat_bin$X2_bin <- ifelse(sample_data$X2 >= 7, 1, 0)
+dat_bin$X3_bin <- ifelse(sample_data$X3 >= 7, 1, 0)
+
+tt <- truthTable(dat_bin, outcome = "Y_bin", 
+                 conditions = c("X1_bin", "X2_bin", "X3_bin"),
+                 incl.cut = 0.8)
+sol <- minimize(tt, include = "?", dir.exp = c(1, 1, 1))
+print(sol)  # Compare with TSQCA report
+```
+
+## Why Verification Matters
+
+1. **Accuracy**: Confirms TSQCA extraction matches QCA package output
+2. **Reproducibility**: Provides independent verification for reviewers
+3. **Transparency**: Documents the analysis pipeline clearly
+
+## What to Check
+
+- Solution expressions match exactly
+- Consistency and coverage values match
+- Number of solutions (M1, M2, ...) is correct
+
+> **Tip**: The "QCA Package Output" section in TSQCA reports (enabled by `include_raw_output = TRUE`) shows the direct `print(sol)` output for easy comparison.
 
 
 ## References

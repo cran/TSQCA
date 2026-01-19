@@ -27,6 +27,39 @@ Implemented sweep types:
 
 ## Features
 
+### Bug Fix for Intermediate Solutions (v1.2.0)
+
+**Important**: v1.2.0 fixes a critical bug where intermediate solutions were incorrectly extracted when using `dir.exp`. If you used intermediate solutions in previous versions, please re-run your analyses.
+
+### Verification Recommendation for Publications
+
+**For academic publications**, we strongly recommend verifying TSQCA results directly with the QCA package:
+
+```r
+library(QCA)
+
+# Run QCA directly to verify TSQCA results
+tt <- truthTable(dat, outcome = "Y", 
+                 conditions = c("X1", "X2", "X3"),
+                 incl.cut = 0.8)
+sol <- minimize(tt, include = "?", dir.exp = c(1, 1, 1))
+print(sol)  # Compare with TSQCA report output
+```
+
+TSQCA reports include a "QCA Package Output" section for this purpose. Always ensure the solution expressions match before publishing.
+
+### Solution Type Display and Verification (New in v1.2.0)
+
+Reports now explicitly show the **Solution Type** (Complex/Parsimonious/Intermediate) and include optional **QCA package output** for verification:
+
+```r
+# Reports now show Solution Type in Analysis Overview
+generate_report(result, "report.md", dat = mydata)
+
+# Disable QCA raw output if not needed
+generate_report(result, "report.md", dat = mydata, include_raw_output = FALSE)
+```
+
 ### Three Types of QCA Solutions (New in v1.1.0)
 
 As of v1.1.0, TSQCA uses the **same defaults** as `QCA::minimize()`:

@@ -20,17 +20,14 @@ qca_bin <- function(x, thr) {
 #'
 #' @param sol A solution object returned by \code{QCA::minimize()}.
 #' @return Integer. Number of intermediate solutions, or 0 if none.
+#' @note When dir.exp is specified, the true Intermediate solution is stored in
+#'   sol$i.sol, not sol$solution (which contains the Parsimonious solution).
 #' @keywords internal
 get_n_solutions <- function(sol) {
   if (is.null(sol)) return(0L)
   
-  # Use sol$solution as primary source (contains correct distinct solutions)
-  sol_list <- try(sol$solution, silent = TRUE)
-  if (!inherits(sol_list, "try-error") && !is.null(sol_list) && length(sol_list) > 0) {
-    return(length(sol_list))
-  }
-  
-  # Fallback: count from i.sol structure
+
+  # Priority 1: i.sol structure (contains true Intermediate solution when dir.exp specified)
   if (!is.null(sol$i.sol) && length(sol$i.sol) > 0) {
     total_count <- 0L
     for (model_name in names(sol$i.sol)) {
@@ -42,6 +39,12 @@ get_n_solutions <- function(sol) {
     if (total_count > 0) {
       return(total_count)
     }
+  }
+  
+  # Fallback: sol$solution (for Parsimonious or when dir.exp not specified)
+  sol_list <- try(sol$solution, silent = TRUE)
+  if (!inherits(sol_list, "try-error") && !is.null(sol_list) && length(sol_list) > 0) {
+    return(length(sol_list))
   }
   
   return(0L)
@@ -98,23 +101,23 @@ qca_extract <- function(sol, extract_mode = c("first", "all", "essential")) {
     return(null_response(extract_mode))
   }
   
-  # === Use sol$solution as the primary source (contains correct distinct solutions) ===
+  # === Priority 1: i.sol structure (true Intermediate solution when dir.exp specified) ===
   sol_list <- NULL
   
-  # Try sol$solution first (preferred - contains correct distinct solutions)
-  if (!is.null(sol$solution) && length(sol$solution) > 0) {
-    sol_list <- sol$solution
-  }
-  
-  # Fallback: try i.sol entries
-  if (is.null(sol_list) || length(sol_list) == 0) {
+  # Try i.sol first (contains true Intermediate solution when dir.exp specified)
+  if (!is.null(sol$i.sol) && length(sol$i.sol) > 0) {
     sol_list <- try(sol$i.sol$C1P1$solution, silent = TRUE)
     if (inherits(sol_list, "try-error") || is.null(sol_list) || length(sol_list) == 0) {
       # Try first i.sol entry
-      if (!is.null(sol$i.sol) && length(sol$i.sol) > 0) {
-        sol_list <- try(sol$i.sol[[1]]$solution, silent = TRUE)
-        if (inherits(sol_list, "try-error")) sol_list <- NULL
-      }
+      sol_list <- try(sol$i.sol[[1]]$solution, silent = TRUE)
+      if (inherits(sol_list, "try-error")) sol_list <- NULL
+    }
+  }
+  
+  # Fallback: sol$solution (for Parsimonious or when dir.exp not specified)
+  if (is.null(sol_list) || length(sol_list) == 0) {
+    if (!is.null(sol$solution) && length(sol$solution) > 0) {
+      sol_list <- sol$solution
     }
   }
   
